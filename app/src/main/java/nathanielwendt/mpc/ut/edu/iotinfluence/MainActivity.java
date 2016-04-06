@@ -1,13 +1,22 @@
 package nathanielwendt.mpc.ut.edu.iotinfluence;
 
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import nathanielwendt.mpc.ut.edu.iotinfluence.device.Device;
+import nathanielwendt.mpc.ut.edu.iotinfluence.device.DeviceCommand;
+import nathanielwendt.mpc.ut.edu.iotinfluence.device.DeviceUnavailableException;
+import nathanielwendt.mpc.ut.edu.iotinfluence.device.Light;
+import nathanielwendt.mpc.ut.edu.iotinfluence.device.Observables;
+import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.DeviceReq;
+import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.SpatialReq;
+import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.TypeReq;
+import nathanielwendt.mpc.ut.edu.iotinfluence.misc.Location;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -15,17 +24,62 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        List<DeviceReq> reqs = new ArrayList<DeviceReq>();
+        Location currLoc = new Location(0,0);
+        reqs.add(new SpatialReq(SpatialReq.Bound.CLOSEST, SpatialReq.Influence.AWARE, currLoc));
+        //no effect for static binding since type token is passed into methods
+        //only can effect static binding if type given here is different from type token (will return nothing)
+        reqs.add(new TypeReq(new TypeReq.Type[]{TypeReq.Type.LIGHT}));
+
+        Warble snapshot = new Warble(this);
+
+        //STATIC BIND
+        //decoupled
+        List<Light> devices = snapshot.retrieve(Light.class, reqs, 1);
+        Light light = snapshot.retrieve(Light.class, reqs);
+
+        try {
+            devices.get(0).on();
+            light.on();
+        } catch (DeviceUnavailableException e) {
+            e.printStackTrace();
+        }
+
+        //Use this requestId to report Help! commands
+        String requestId = light.requestId();
+        String deviceId = light.deviceId();
+
+        //STATIC BIND
+        //coupled
+        snapshot.act(Light.class, reqs, 1, Warble.CommandPlans.lightBinary);
+        snapshot.act(Light.class, reqs, 1, new DeviceCommand() {
             @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+            public void onBind(Device device) throws DeviceUnavailableException {
+                ((Light) device).on();
+            }
+
+            @Override
+            public void onUnbind(Device device) throws DeviceUnavailableException {
+                ((Light) device).off();
             }
         });
+
+        //DYNAMIC BIND
+        Observables.SpatialObservable spatialObservable = new Observables.SpatialObservable();
+        WarbleBind warbleBinding = new WarbleBind.Builder().reqs(reqs).num(1).ctx(this)
+                .fluidity(WarbleBind.Fluidity.FIXED)
+                .command(Warble.CommandPlans.lightBinary)
+                .bind(spatialObservable);
+
+        //update
+        Location loc = new Location(0,0);
+        spatialObservable.update(loc);
+
+
+        //unbind
+        warbleBinding.unbind();
+
     }
 
     @Override

@@ -1,11 +1,13 @@
 package nathanielwendt.mpc.ut.edu.iotinfluence;
 
+import android.content.Context;
 import android.location.Location;
 
 import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
 
+import nathanielwendt.mpc.ut.edu.iotinfluence.device.DeviceCommand;
 import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.DeviceReq;
 
 /**
@@ -18,6 +20,7 @@ public class WarbleBind {
     private final Observable obs;
     private final Fluidity fluidity;
     private final Warble warble;
+    private final Context ctx;
 
     private WarbleBind(Builder builder){
         if(builder.reqs == null){
@@ -32,7 +35,12 @@ public class WarbleBind {
             throw new IllegalArgumentException("No Observable included in Warble Request");
         }
 
-        this.warble = new Warble();
+        if(builder.ctx == null){
+            throw new IllegalArgumentException("No context included in Warble Request");
+        }
+
+        this.ctx = builder.ctx;
+        this.warble = new Warble(this.ctx);
         this.fluidity = builder.fluidity;
         this.N = builder.N;
         this.reqs = builder.reqs;
@@ -69,6 +77,7 @@ public class WarbleBind {
         private DeviceCommand command;
         private Observable obs;
         private Fluidity fluidity;
+        private Context ctx;
 
         public Builder(){}
 
@@ -89,6 +98,11 @@ public class WarbleBind {
 
         public Builder fluidity(Fluidity fluidity){
             this.fluidity = fluidity;
+            return this;
+        }
+
+        public Builder ctx(Context ctx){
+            this.ctx = ctx;
             return this;
         }
 

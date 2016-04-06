@@ -1,4 +1,4 @@
-package nathanielwendt.mpc.ut.edu.iotinfluence;
+package nathanielwendt.mpc.ut.edu.iotinfluence.device;
 
 /**
  * Created by nathanielwendt on 3/9/16.
