@@ -3,7 +3,7 @@ package nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs;
 import java.util.Comparator;
 
 import nathanielwendt.mpc.ut.edu.iotinfluence.misc.Location;
-import nathanielwendt.mpc.ut.edu.iotinfluence.models.DeviceModel;
+import static nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.SpatialReqOperator.*;
 
 /**
  * Created by nathanielwendt on 3/23/16.
@@ -20,15 +20,32 @@ public class SpatialReq extends DeviceReq {
         this.requesterLoc = loc;
     }
 
-    public enum Bound implements Comparator<DeviceModel> {
+    public Location loc(){
+        return requesterLoc;
+    }
+
+    public enum Bound implements Comparator<RelevancePoint> {
         CLOSEST {
-            @Override public int compare(DeviceModel dev1, DeviceModel dev2){
-                double d1;
-                return 0;
+            @Override public int compare(RelevancePoint p1, RelevancePoint p2){
+                if(p2.relevance() > p1.relevance()){
+                    return 1;
+                } else if(p2.relevance() == p1.relevance()){
+                    return 0;
+                } else {
+                    return - 1;
+                }
             }
         },
         FARTHEST {
-
+            @Override public int compare(RelevancePoint p1, RelevancePoint p2){
+                if(p1.relevance() > p2.relevance()){
+                    return 1;
+                } else if(p1.relevance() == p2.relevance()){
+                    return 0;
+                } else {
+                    return - 1;
+                }
+            }
         };
     }
 

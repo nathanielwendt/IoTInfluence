@@ -1,6 +1,5 @@
 package nathanielwendt.mpc.ut.edu.iotinfluence.models;
 
-import android.location.Location;
 
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.Device;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.Light;
@@ -12,7 +11,6 @@ import nathanielwendt.mpc.ut.edu.iotinfluence.service.Service;
 public class LightModel extends DeviceModel {
     public Service service;
     public String name;
-    public Location location;
     public double brightness;
 
     public Device abs(String requestId){

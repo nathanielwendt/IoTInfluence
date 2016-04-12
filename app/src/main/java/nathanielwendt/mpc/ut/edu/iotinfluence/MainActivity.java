@@ -52,16 +52,11 @@ public class MainActivity extends AppCompatActivity {
 
         //STATIC BIND
         //coupled
-        snapshot.act(Light.class, reqs, 1, Warble.CommandPlans.lightBinary);
+        snapshot.act(Light.class, reqs, 1, Warble.Commands.lightBinary);
         snapshot.act(Light.class, reqs, 1, new DeviceCommand() {
             @Override
             public void onBind(Device device) throws DeviceUnavailableException {
                 ((Light) device).on();
-            }
-
-            @Override
-            public void onUnbind(Device device) throws DeviceUnavailableException {
-                ((Light) device).off();
             }
         });
 
@@ -69,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
         Observables.SpatialObservable spatialObservable = new Observables.SpatialObservable();
         WarbleBind warbleBinding = new WarbleBind.Builder().reqs(reqs).num(1).ctx(this)
                 .fluidity(WarbleBind.Fluidity.FIXED)
-                .command(Warble.CommandPlans.lightBinary)
+                .command(Warble.Plans.lightBinary)
                 .bind(spatialObservable);
 
         //update

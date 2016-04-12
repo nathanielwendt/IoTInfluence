@@ -7,8 +7,9 @@ import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
 
-import nathanielwendt.mpc.ut.edu.iotinfluence.device.DeviceCommand;
+import nathanielwendt.mpc.ut.edu.iotinfluence.device.DevicePlan;
 import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.DeviceReq;
+import nathanielwendt.mpc.ut.edu.iotinfluence.models.DeviceModel;
 
 /**
  * Created by nathanielwendt on 3/21/16.
@@ -16,7 +17,7 @@ import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.DeviceReq;
 public class WarbleBind {
     private final int N;
     private final List<DeviceReq> reqs;
-    private final DeviceCommand command;
+    private final DevicePlan plan;
     private final Observable obs;
     private final Fluidity fluidity;
     private final Warble warble;
@@ -27,7 +28,7 @@ public class WarbleBind {
             throw new IllegalArgumentException("No Device Requirements included in Warble Request");
         }
 
-        if(builder.command == null){
+        if(builder.plan == null){
             throw new IllegalArgumentException("No Device Requirements included in Warble Request");
         }
 
@@ -44,13 +45,15 @@ public class WarbleBind {
         this.fluidity = builder.fluidity;
         this.N = builder.N;
         this.reqs = builder.reqs;
-        this.command = builder.command;
+        this.plan = builder.plan;
         this.obs = builder.obs;
         this.obs.addObserver(new Observer(){
             @Override
             public void update(Observable observable, Object data) {
-                Location loc = (Location) data;
+                Location newLocation = (Location) data;
                 //act
+                List<Device> devices = WarbleBind.this.warble.retrieve()
+
             }
         });
     }
@@ -74,7 +77,7 @@ public class WarbleBind {
     public static class Builder {
         private int N = 1;
         private List<DeviceReq> reqs;
-        private DeviceCommand command;
+        private DevicePlan plan;
         private Observable obs;
         private Fluidity fluidity;
         private Context ctx;
@@ -91,8 +94,8 @@ public class WarbleBind {
             return this;
         }
 
-        public Builder command(DeviceCommand command){
-            this.command = command;
+        public Builder command(DevicePlan plan){
+            this.plan = plan;
             return this;
         }
 

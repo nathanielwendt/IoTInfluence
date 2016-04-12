@@ -6,10 +6,14 @@ import android.os.AsyncTask;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
+import nathanielwendt.mpc.ut.edu.iotinfluence.db.Action;
+import nathanielwendt.mpc.ut.edu.iotinfluence.db.LocalActionDB;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.Device;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.DeviceCommand;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.DeviceManager;
+import nathanielwendt.mpc.ut.edu.iotinfluence.device.DevicePlan;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.DeviceUnavailableException;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.Light;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.LocalDeviceManager;
@@ -17,6 +21,8 @@ import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.AggregateReqOperator;
 import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.DeviceReq;
 import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.ItemwiseReqOperator;
 import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.ReqOperator;
+import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.SpatialReq;
+import nathanielwendt.mpc.ut.edu.iotinfluence.misc.Location;
 import nathanielwendt.mpc.ut.edu.iotinfluence.models.DeviceModel;
 import nathanielwendt.mpc.ut.edu.iotinfluence.util.InitializedCallback;
 
@@ -29,12 +35,17 @@ public class Warble {
     Device lastDevice = null;
     DeviceManager devManager;
     Context ctx;
+    private int reqCount = 0;
 
     public Warble(Context ctx){
         //scan for services
         //populate services and devices tables
         devManager = new LocalDeviceManager(ctx);
         this.ctx = ctx;
+    }
+
+    public void setDevManager(DeviceManager devManager){
+        this.devManager = devManager;
     }
 
     public void initialize(){
@@ -111,12 +122,33 @@ public class Warble {
         for(DeviceModel device : finalDevices){
             Device temp = device.abs(requestId);
             retList.add(clazz.cast(temp));
+
+            //populate local histories
+            requestingDevLocs.put(requestId, device.location());
+            for(DeviceReq req : reqs){
+                if(req instanceof SpatialReq){
+                    Location refLoc = ((SpatialReq) reqs.get(0)).loc();
+                    requestingRefLocs.put(requestId, refLoc);
+                }
+            }
         }
         return retList;
     }
 
+    private Map<String, Location> requestingDevLocs;
+    private Map<String, Location> requestingRefLocs;
+    private DeviceModel model;
+
+    public void help(String requestId, String deviceId){
+        Location devLocation = requestingDevLocs.get(requestId);
+        Location refLocation = requestingRefLocs.get(requestId);
+        LocalActionDB.insert(Action.newDefault(deviceId, refLocation, devLocation, false));
+
+        //To-do rollback
+    }
+
     public String getNewRequestId(){
-        return "req0001";
+        return "req" + String.valueOf(reqCount++);
     }
 
     public <D extends Device> D retrieve(Class<D> clazz, List<DeviceReq> reqs){
@@ -130,13 +162,22 @@ public class Warble {
     }
 
     public <D> void act(Class<D> clazz, List<DeviceReq> reqs, int N,
-                           DeviceCommand comm){
+                           DeviceCommand command){
         //do we want to check for initialized here?
         //perhaps just give a warning?
     }
 
-    public static class CommandPlans {
+    public static class Commands {
         public static DeviceCommand lightBinary = new DeviceCommand() {
+            @Override
+            public void onBind(Device device) throws DeviceUnavailableException {
+                ((Light) device).on();
+            }
+        };
+    }
+
+    public static class Plans {
+        public static DevicePlan lightBinary = new DevicePlan() {
             @Override
             public void onBind(Device device) throws DeviceUnavailableException {
                 ((Light) device).on();

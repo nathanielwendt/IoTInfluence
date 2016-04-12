@@ -12,6 +12,7 @@ import nathanielwendt.mpc.ut.edu.iotinfluence.device.Light;
 import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.DeviceReq;
 import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.SpatialReq;
 import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.TypeReq;
+import nathanielwendt.mpc.ut.edu.iotinfluence.misc.Location;
 
 /**
  * Created by nathanielwendt on 3/28/16.
@@ -38,7 +39,8 @@ public class TestActivity extends Activity {
 //        });
 
         reqs = new ArrayList<DeviceReq>();
-        reqs.add(new SpatialReq(SpatialReq.Bound.CLOSEST, SpatialReq.Influence.AWARE));
+        reqs.add(new SpatialReq(SpatialReq.Bound.CLOSEST, SpatialReq.Influence.AWARE,
+                                new Location(0,0)));
         //no effect for static binding since type token is passed into methods
         //only can effect static binding if type given here is different from type token (will return nothing)
         reqs.add(new TypeReq(new TypeReq.Type[]{TypeReq.Type.LIGHT}));
