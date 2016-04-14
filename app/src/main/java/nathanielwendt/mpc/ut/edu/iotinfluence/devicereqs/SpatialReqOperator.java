@@ -14,9 +14,9 @@ import nathanielwendt.mpc.ut.edu.iotinfluence.models.DeviceModel;
  */
 public class SpatialReqOperator extends AggregateReqOperator {
     private final static double REF_THRESH = 5;
-    private final static double REF_WEIGHT = 2;
+    private final static double REF_WEIGHT = 2; //2
     private final static double DEV_THRESH = 5;
-    private final static double DEV_WEIGHT = 1;
+    private final static double DEV_WEIGHT = .3; //1
 
     private final SpatialReq req;
 
@@ -35,6 +35,7 @@ public class SpatialReqOperator extends AggregateReqOperator {
             knowledge = 0.0;
             if (this.req.influence == SpatialReq.Influence.AWARE) {
                 if (candidate.location() != null) {
+                    if(this.req.requesterLoc == null){ throw new RuntimeException("flejkflkefjkle"); }
                     actions = LocalActionDB.query(this.req.requesterLoc,
                                                     candidate.location(),
                                                     DEV_THRESH);
@@ -43,19 +44,44 @@ public class SpatialReqOperator extends AggregateReqOperator {
                                                     DEV_THRESH);
                 }
 
+                int posCount = 0;
+                int negCount = 0;
+                double posKnowledge = 0.0;
+                double negKnowledge = 0.0;
                 for (Action action : actions) {
                     if (action.devLocation != null) {
                         double refDist = Location.distance(action.refLocation, this.req.requesterLoc);
                         double devDist = Location.distance(action.devLocation, candidate.location());
-                        double sign = (action.successful) ? 1 : -1;
-                        knowledge += sign * ((REF_WEIGHT * (REF_THRESH - refDist)) +
-                                (DEV_WEIGHT * (DEV_THRESH - devDist))
-                        );
+
+                        if(action.successful){
+                            posKnowledge += ((REF_WEIGHT * (REF_THRESH - refDist)) +
+                                    (DEV_WEIGHT * (DEV_THRESH - devDist)));
+                            posCount++;
+                        } else {
+                            negKnowledge += ((REF_WEIGHT * (REF_THRESH - refDist)) +
+                                    (DEV_WEIGHT * (DEV_THRESH - devDist)));
+                            negCount++;
+                        }
+//                        double sign = (action.successful) ? 1 : -1;
+//                        knowledge += sign * ((REF_WEIGHT * (REF_THRESH - refDist)) +
+//                                (DEV_WEIGHT * (DEV_THRESH - devDist))
+//                        );
                     } else {
-                        double refDist = Location.distance(action.refLocation, this.req.requesterLoc);
-                        double sign = (action.successful) ? 1 : -1;
-                        knowledge += sign * ((REF_WEIGHT * (REF_THRESH - refDist)));
+                        //TODO- not adapted for new algorithm!!!
+                        throw new RuntimeException("Not implemented yet");
+//                        double refDist = Location.distance(action.refLocation, this.req.requesterLoc);
+//                        double sign = (action.successful) ? 1 : -1;
+//                        knowledge += sign * ((REF_WEIGHT * (REF_THRESH - refDist)));
                     }
+                }
+
+                //knowledge = posKnowledge - negKnowledge;
+                if (posCount != 0) {
+                    knowledge += posKnowledge / posCount;
+                }
+
+                if (negCount != 0) {
+                    knowledge -= 2 * negKnowledge / negCount;
                 }
             }
 
@@ -69,9 +95,8 @@ public class SpatialReqOperator extends AggregateReqOperator {
         Collections.sort(relPoints, this.req.bound);
 
         List<DeviceModel> res = new ArrayList<DeviceModel>();
-        System.out.println("-----");
         for(RelevancePoint point : relPoints){
-            System.out.println(point.getDeviceModel().id + " >> " + point.relevance());
+            //System.out.println(point.getDeviceModel().id + " >> " + point.relevance());
             res.add(point.getDeviceModel());
         }
 

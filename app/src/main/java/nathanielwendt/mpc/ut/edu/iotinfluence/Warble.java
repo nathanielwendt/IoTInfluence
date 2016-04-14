@@ -1,14 +1,11 @@
 package nathanielwendt.mpc.ut.edu.iotinfluence;
 
 import android.content.Context;
-import android.os.AsyncTask;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
-import nathanielwendt.mpc.ut.edu.iotinfluence.db.Action;
 import nathanielwendt.mpc.ut.edu.iotinfluence.db.LocalActionDB;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.Device;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.DeviceCommand;
@@ -40,7 +37,6 @@ public class Warble {
     public Warble(Context ctx){
         //scan for services
         //populate services and devices tables
-        devManager = new LocalDeviceManager(ctx);
         this.ctx = ctx;
     }
 
@@ -49,27 +45,42 @@ public class Warble {
     }
 
     public void initialize(){
-        InitializeTask initTask = new InitializeTask();
-        initTask.execute();
-    }
-
-    public void initialize(InitializedCallback callback){
-        InitializeTask initTask = new InitializeTask();
-        initTask.execute(callback);
-    }
-
-    private class InitializeTask extends AsyncTask<InitializedCallback, Void, Void> {
-
-        @Override
-        protected Void doInBackground(final InitializedCallback... params) {
-            devManager.scan(new InitializedCallback(){
-                @Override public void onInit(){
-                    for(InitializedCallback cb : params){ cb.onInit(); }
-                }
-            });
-            return null;
+        if(devManager == null){
+            devManager = new LocalDeviceManager(ctx);
         }
+        devManager.scan();
     }
+
+    public void initialize(final InitializedCallback callback){
+        if(devManager == null){
+            devManager = new LocalDeviceManager(ctx);
+        }
+
+        devManager.scan(new InitializedCallback(){
+            @Override public void onInit(){
+                callback.onInit();
+            }
+        });
+
+//        InitializeTask initTask = new InitializeTask();
+//        initTask.execute(callback);
+    }
+
+//    private class InitializeTask extends AsyncTask<InitializedCallback, Void, Void> {
+//
+//        @Override
+//        protected Void doInBackground(final InitializedCallback... params) {
+//            devManager.scan(new InitializedCallback() {
+//                @Override
+//                public void onInit() {
+//                    for (InitializedCallback cb : params) {
+//                        cb.onInit();
+//                    }
+//                }
+//            });
+//            return null;
+//        }
+//    }
 
 
     public synchronized boolean initialized(){
@@ -110,7 +121,7 @@ public class Warble {
 
         //apply aggregate reqs to device collection
         for(AggregateReqOperator operator : aggregateOperators){
-            operator.resolve(devices);
+            devices = operator.resolve(devices);
         }
 
         List<DeviceModel> finalDevices = devices.subList(0, N);
@@ -119,31 +130,26 @@ public class Warble {
         //cast to specific <D> class
         List<D> retList = new ArrayList<>();
         String requestId = getNewRequestId();
+        Location refLoc = null;
+        for(DeviceReq req : reqs){
+            if(req instanceof SpatialReq){
+                refLoc = ((SpatialReq) reqs.get(0)).loc();
+               // requestingRefLocs.put(requestId, refLoc);
+            }
+        }
+
+        LocalActionDB.insertPending(requestId, refLoc);
         for(DeviceModel device : finalDevices){
             Device temp = device.abs(requestId);
             retList.add(clazz.cast(temp));
-
             //populate local histories
-            requestingDevLocs.put(requestId, device.location());
-            for(DeviceReq req : reqs){
-                if(req instanceof SpatialReq){
-                    Location refLoc = ((SpatialReq) reqs.get(0)).loc();
-                    requestingRefLocs.put(requestId, refLoc);
-                }
-            }
+            LocalActionDB.populatePending(requestId, device.id, device.location());
         }
         return retList;
     }
 
-    private Map<String, Location> requestingDevLocs;
-    private Map<String, Location> requestingRefLocs;
-    private DeviceModel model;
-
     public void help(String requestId, String deviceId){
-        Location devLocation = requestingDevLocs.get(requestId);
-        Location refLocation = requestingRefLocs.get(requestId);
-        LocalActionDB.insert(Action.newDefault(deviceId, refLocation, devLocation, false));
-
+        LocalActionDB.update(requestId, deviceId, false);
         //To-do rollback
     }
 

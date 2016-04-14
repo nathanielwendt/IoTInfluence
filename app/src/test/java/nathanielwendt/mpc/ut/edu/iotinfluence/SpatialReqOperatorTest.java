@@ -50,8 +50,13 @@ public class SpatialReqOperatorTest {
         insertAction(1, new Location(2,9), true);
     }
 
+    private static int count = 0;
+
     private void insertAction(int lmIndex, Location loc, boolean successful){
-        LocalActionDB.insert(Action.newDefault(lightModels[lmIndex].id, loc,
+        String requestId = "req" + String.valueOf(count++);
+
+        String deviceId = lightModels[lmIndex].id;
+        LocalActionDB.insert(requestId, deviceId, Action.newDefault(deviceId, loc,
                 lightModels[lmIndex].location, successful));
     }
 

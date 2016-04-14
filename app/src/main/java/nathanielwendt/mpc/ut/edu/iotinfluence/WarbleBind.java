@@ -9,7 +9,6 @@ import java.util.Observer;
 
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.DevicePlan;
 import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.DeviceReq;
-import nathanielwendt.mpc.ut.edu.iotinfluence.models.DeviceModel;
 
 /**
  * Created by nathanielwendt on 3/21/16.
@@ -52,7 +51,7 @@ public class WarbleBind {
             public void update(Observable observable, Object data) {
                 Location newLocation = (Location) data;
                 //act
-                List<Device> devices = WarbleBind.this.warble.retrieve()
+                //List<Device> devices = WarbleBind.this.warble.retrieve()
 
             }
         });

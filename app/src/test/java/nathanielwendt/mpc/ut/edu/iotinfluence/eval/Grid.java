@@ -43,6 +43,50 @@ public class Grid {
         return bestDev;
     }
 
+    //rather than returning the device, returns a code representing the device's id
+    //A single value represents a single possible answer, comma separated values represent multiple possible answers
+    public SampleResult getNearestEffectiveIdCode(Location loc){
+        double smallestDist = Double.MAX_VALUE;
+        SampleResult res = new SampleResult();
+        for(DeviceModel dev : devices){
+            double currDist = Location.distance(loc, dev.location());
+            if(currDist == smallestDist && !wallBlocked(dev, loc)){
+                res.add(dev.id);
+            } else if(currDist < smallestDist && !wallBlocked(dev, loc)){
+                smallestDist = currDist;
+                res.clear();
+                res.add(dev.id);
+            }
+        }
+        return res;
+    }
+
+    public static class SampleResult {
+        List<String> ids = new ArrayList<>();
+
+        public void add(String id){
+            ids.add(id);
+        }
+
+        public void clear(){
+            ids.clear();
+        }
+
+        public boolean idInResult(String id){
+            return ids.contains(id);
+        }
+
+        @Override public String toString(){
+            String res = "";
+            String delim = "";
+            for(String id : ids){
+                res += delim + id;
+                delim = "-";
+            }
+            return res;
+        }
+    }
+
     public boolean wallBlocked(DeviceModel dev, Location loc){
         double x1 = dev.location().x();
         double y1 = dev.location().y();
@@ -78,6 +122,26 @@ public class Grid {
         for(DeviceModel dev : devices){
             grid.addDevice(dev);
         }
+        return grid;
+    }
+
+    public static Grid newUpperSingle(List<DeviceModel> devices){
+        Grid grid = Grid.newStandard(devices);
+        grid.addYBoundary(21);
+        return grid;
+    }
+
+    public static Grid newUpperT(List<DeviceModel> devices){
+        Grid grid = Grid.newStandard(devices);
+        grid.addYBoundary(21);
+        grid.addXBoundary(12.5);
+        return grid;
+    }
+
+    public static Grid newX(List<DeviceModel> devices){
+        Grid grid = Grid.newStandard(devices);
+        grid.addYBoundary(12.5);
+        grid.addXBoundary(12.5);
         return grid;
     }
 

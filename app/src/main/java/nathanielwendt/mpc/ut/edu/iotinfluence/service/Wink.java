@@ -177,6 +177,7 @@ public class Wink implements Service {
         return new Light(deviceId, requestId){
             @Override
             public void brightness(int level) throws DeviceUnavailableException {
+                super.brightness(level);
                 WinkRequest req = new WinkRequest(true);
                 req.param("light_bulb_id", deviceId);
                 Map<String,Object> desiredState = new HashMap<String,Object>();
@@ -188,7 +189,8 @@ public class Wink implements Service {
             }
 
             @Override
-            public void off() {
+            public void off() throws DeviceUnavailableException {
+                super.off();
                 WinkRequest req = new WinkRequest(true);
                 req.param("light_bulb_id", deviceId);
                 Map<String,Object> desiredState = new HashMap<String,Object>();
@@ -199,7 +201,8 @@ public class Wink implements Service {
             }
 
             @Override
-            public void on() {
+            public void on() throws DeviceUnavailableException {
+                super.on();
                 WinkRequest req = new WinkRequest(true);
                 req.param("light_bulb_id", deviceId);
                 Map<String,Object> desiredState = new HashMap<String,Object>();

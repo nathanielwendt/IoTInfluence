@@ -1,6 +1,7 @@
 package nathanielwendt.mpc.ut.edu.iotinfluence.device;
 
 import android.content.Context;
+import android.os.AsyncTask;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,42 +26,58 @@ public class LocalDeviceManager implements DeviceManager {
         serviceManager = new ServiceManager(ctx);
     }
 
+    private class ScanTask extends AsyncTask<InitializedCallback, Void, Void> {
+
+        @Override
+        protected Void doInBackground(final InitializedCallback... params) {
+            serviceManager.scan(new ServiceManager.FindServiceCallback(){
+                @Override public void onService(Service service){
+                    services.add(service);
+                    service.fetchDevices(new Service.FetchDevicesCallback(){
+                        @Override public void onFetch(List<DeviceModel> fetchedDevices){
+                            devices.addAll(fetchedDevices);
+                        }
+                    });
+                }
+
+                @Override public void done(){
+                    initialized = true;
+                    //should be single param, but need loop to access varargs
+                    for(InitializedCallback cb : params){ cb.onInit(); }
+                }
+            });
+            return null;
+        }
+    }
+
     @Override
     public void scan() {
-        serviceManager.scan(new ServiceManager.FindServiceCallback(){
-            @Override public void onService(Service service){
-                services.add(service);
-                service.fetchDevices(new Service.FetchDevicesCallback(){
-                    @Override public void onFetch(List<DeviceModel> fetchedDevices){
-                        devices.addAll(fetchedDevices);
-                    }
-                });
-            }
-
-            @Override public void done(){
-                initialized = true;
-            }
-        });
+        ScanTask scanTask = new ScanTask();
+        scanTask.execute();
     }
 
     @Override
     public void scan(final InitializedCallback callback){
-        serviceManager.scan(new ServiceManager.FindServiceCallback(){
-            @Override public void onService(Service service){
-                services.add(service);
-                service.fetchDevices(new Service.FetchDevicesCallback(){
-                    @Override public void onFetch(List<DeviceModel> fetchedDevices){
-                        devices.addAll(fetchedDevices);
-                        done();
-                    }
-                });
-            }
-
-            @Override public void done(){
-                initialized = true;
-                callback.onInit();
-            }
-        });
+        ScanTask scanTask = new ScanTask();
+        scanTask.execute(callback);
+//
+//
+//        serviceManager.scan(new ServiceManager.FindServiceCallback(){
+//            @Override public void onService(Service service){
+//                services.add(service);
+//                service.fetchDevices(new Service.FetchDevicesCallback(){
+//                    @Override public void onFetch(List<DeviceModel> fetchedDevices){
+//                        devices.addAll(fetchedDevices);
+//                        done();
+//                    }
+//                });
+//            }
+//
+//            @Override public void done(){
+//                initialized = true;
+//                callback.onInit();
+//            }
+//        });
     }
 
     public boolean isInitialized(){

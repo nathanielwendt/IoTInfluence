@@ -23,4 +23,8 @@ public class Location {
     public static double distance(Location a, Location b){
         return Math.sqrt( Math.pow(a.x() - b.x(), 2) + Math.pow(a.y() - b.y(), 2) );
     }
+
+    @Override public String toString(){
+        return this.x() + "," + this.y();
+    }
 }
