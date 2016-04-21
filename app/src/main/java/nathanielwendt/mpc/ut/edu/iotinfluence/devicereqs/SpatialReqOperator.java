@@ -35,7 +35,7 @@ public class SpatialReqOperator extends AggregateReqOperator {
             knowledge = 0.0;
             if (this.req.influence == SpatialReq.Influence.AWARE) {
                 if (candidate.location() != null) {
-                    if(this.req.requesterLoc == null){ throw new RuntimeException("flejkflkefjkle"); }
+                    if(this.req.requesterLoc == null){ throw new RuntimeException("Requester Loc is Null and is required"); }
                     actions = LocalActionDB.query(this.req.requesterLoc,
                                                     candidate.location(),
                                                     DEV_THRESH);

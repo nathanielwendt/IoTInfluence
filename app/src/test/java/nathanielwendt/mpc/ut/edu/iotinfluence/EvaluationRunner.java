@@ -9,8 +9,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import nathanielwendt.mpc.ut.edu.iotinfluence.device.Device;
-import nathanielwendt.mpc.ut.edu.iotinfluence.device.DeviceManager;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.DeviceUnavailableException;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.Light;
 import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.DeviceReq;
@@ -20,30 +18,45 @@ import nathanielwendt.mpc.ut.edu.iotinfluence.misc.Location;
 import nathanielwendt.mpc.ut.edu.iotinfluence.models.DeviceModel;
 import nathanielwendt.mpc.ut.edu.iotinfluence.models.LightModel;
 import nathanielwendt.mpc.ut.edu.iotinfluence.service.Service;
-import nathanielwendt.mpc.ut.edu.iotinfluence.util.InitializedCallback;
+import nathanielwendt.mpc.ut.edu.iotinfluence.util.TestDevManager;
+import nathanielwendt.mpc.ut.edu.iotinfluence.util.TestService;
 
 /**
  * Created by nathanielwendt on 4/11/16.
  */
 public class EvaluationRunner {
-    public static final int DIM = 25;
-    public static final int TRAIN_STEP = 2;
-    public static final Location[] TRAINING_LOCS = new Location[144];
-    public static final Location[] DEF_GRID_SAMPLES = new Location[(DIM + 1) * (DIM + 1)];
+    public static int DIM = 25;
+    public static int TRAIN_STEP = 3;
+    public static Location[] TRAINING_LOCS;
+    public static Location[] DEF_GRID_SAMPLES = new Location[(DIM + 1) * (DIM + 1)];
     public Warble warble;
+    public static boolean DUPLICATE_TRAINING = false;
 
     static {
+        buildTraining(1);
+
+        int count = 0;
+        for(int y = 0; y <= DIM; y++){
+            for(int x = 0; x <= DIM; x++){
+                DEF_GRID_SAMPLES[count++] = new Location(x,y);
+            }
+        }
+    }
+
+    private static void buildTraining(int trainStep){
+        TRAIN_STEP = trainStep;
+
+        int trainingSize = 0;
+        if(DIM % trainStep == 0){
+            trainingSize = ((DIM / TRAIN_STEP) - 1) * ((DIM / TRAIN_STEP) - 1);
+        } else {
+            trainingSize = (DIM / TRAIN_STEP) * (DIM / TRAIN_STEP);
+        }
+        TRAINING_LOCS = new Location[trainingSize];
         int count = 0;
         for(int y = TRAIN_STEP; y < DIM; y+=TRAIN_STEP){
             for(int x = TRAIN_STEP; x < DIM; x+=TRAIN_STEP){
                 TRAINING_LOCS[count++] = new Location(x,y);
-            }
-        }
-
-        count = 0;
-        for(int y = 0; y <= DIM; y++){
-            for(int x = 0; x <= DIM; x++){
-                DEF_GRID_SAMPLES[count++] = new Location(x,y);
             }
         }
     }
@@ -75,19 +88,26 @@ public class EvaluationRunner {
     @Test
     public void basicLocationTest() throws Exception {
         List<DeviceModel> lights = buildLightsGeneric();
-        Grid grid = Grid.newUpperT(lights);
+        Grid grid = Grid.newLeftT(lights);
 
         warble = new Warble(new Activity());
         warble.setDevManager(new TestDevManager(lights));
         warble.initialize();
         while(!warble.initialized()){}
 
-        Location[] resultsTraining = trainWarble(grid, TRAINING_LOCS);
-        //resultsTraining = trainWarble(grid, TRAINING_LOCS);
-
         String[] resultsWarble = evaluateWarble(grid, DEF_GRID_SAMPLES);
         Grid.SampleResult[] resultsGroundTruth = evaluateGroundTruth(grid, DEF_GRID_SAMPLES);
+//        printResults(resultsGroundTruth, resultsWarble);
+//
+//        System.out.println("-----------------------------------------------");
 
+        List<Location> resultsTraining = trainWarble(grid, TRAINING_LOCS, DUPLICATE_TRAINING);
+        System.out.println("Number of training samples: " + TRAINING_LOCS.length);
+        System.out.println("errors during training: " + resultsTraining.size());
+        //resultsTraining = trainWarble(grid, TRAINING_LOCS);
+
+        resultsWarble = evaluateWarble(grid, DEF_GRID_SAMPLES);
+        resultsGroundTruth = evaluateGroundTruth(grid, DEF_GRID_SAMPLES);
         printResults(resultsGroundTruth, resultsWarble);
         //examineResults(resultsGroundTruth, resultsWarble);
     }
@@ -125,16 +145,18 @@ public class EvaluationRunner {
 
     //returns array of Locations that required Help! actions
     //duplicates indicate successive Help! actions on a given location
-    public Location[] trainWarble(Grid grid, Location[] samples){
-        Location[] errors = new Location[samples.length * 4]; // will go out of bounds on multiple test fails
-        int count = 0;
+    //@param - repeatLo indicates whether or not to keep training at a sample location until correct
+    public List<Location> trainWarble(Grid grid, Location[] samples, boolean repeatLoc){
+        List<Location> errors = new ArrayList<>();
         for(Location sample : samples){
-//            if(!trainSample(grid, sample)){
-//                errors[count++] = sample;
-//            }
-
-            while(!trainSample(grid, sample)){
-                errors[count++] = sample;
+            if(repeatLoc){
+                while(!trainSample(grid, sample)){
+                    errors.add(sample);
+                }
+            } else {
+                if(!trainSample(grid, sample)){
+                    errors.add(sample);
+                }
             }
         }
         return errors;
@@ -183,75 +205,12 @@ public class EvaluationRunner {
 
             Light warbleLight = warble.retrieve(Light.class, reqs, 1).get(0);
             try {
-                warbleLight.on();
+                warbleLight.off();
             } catch (DeviceUnavailableException e) {
                 e.printStackTrace();
             }
             res[count++] = warbleLight.deviceId();
         }
         return res;
-    }
-
-    public static class TestService implements Service {
-
-        @Override
-        public Light light(final String deviceId, String requestId) {
-            return new Light(deviceId, requestId){
-                @Override
-                public void brightness(int level) throws DeviceUnavailableException {
-                    super.brightness(level);
-                }
-
-                @Override
-                public void off() throws DeviceUnavailableException {
-                    super.off();
-                }
-
-                @Override
-                public void on() throws DeviceUnavailableException {
-                    super.on();
-                }
-            };
-        }
-
-        @Override
-        public void fetchDevices(FetchDevicesCallback callback) {
-
-        }
-    }
-
-    public static class TestDevManager implements DeviceManager {
-        private List<DeviceModel> devices;
-        private boolean initialized;
-
-        public TestDevManager(List<DeviceModel> devices){
-            this.devices = devices;
-        }
-
-        @Override
-        public void scan() {
-            initialized = true;
-        }
-
-        @Override
-        public void scan(InitializedCallback callback) {
-            initialized = true;
-            callback.onInit();
-        }
-
-        @Override
-        public boolean isInitialized() {
-            return initialized;
-        }
-
-        @Override
-        public <D extends Device> List<DeviceModel> fetchDevices(Class<D> clazz) {
-            return this.devices;
-        }
-
-        @Override
-        public List<DeviceModel> fetchDevices() {
-            return this.devices;
-        }
     }
 }

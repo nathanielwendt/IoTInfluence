@@ -145,6 +145,13 @@ public class Grid {
         return grid;
     }
 
+    public static Grid newLeftT(List<DeviceModel> devices){
+        Grid grid = Grid.newStandard(devices);
+        grid.addYBoundary(21);
+        grid.addXBoundary(4);
+        return grid;
+    }
+
 
 
 }

@@ -38,6 +38,67 @@ public class TestActivity extends Activity {
 //            }
 //        });
 
+
+        //Personalization ------------
+
+
+        //Standard
+
+        //alternative standard
+//        HttpRequest auth = new HttpRequest(Params ...);
+//        auth.post(new HttpRequestCallback(){
+//            @Override public void onResult(JSONObject result){
+//                HttpRequest devices = new HttpRequest(Params ...);
+//                String deviceName = findClosest(devices, getCurrLocation());
+//                HttpRequest onReq = new HttpRequest(Params ..., deviceName, "device: on");
+//            }
+//        });
+//        //BLE
+//        //
+//
+//
+//        //Enterprise
+//        final List<Device> devices = fetchDevices();
+//        Location userLoc = new Location(0,0);
+//        Device closestDevice = devices.get(0);
+//        double currMin = Double.MAX_VALUE;
+//        for(Device device: devices){
+//            if(Location.distance(device.location(), closestDevice.location()) < currMin){
+//                closestDevice = device;
+//            }
+//        }
+//        closestDevice.on();
+
+
+        //Warble
+        reqs = new ArrayList<DeviceReq>();
+        reqs.add(new SpatialReq(SpatialReq.Bound.CLOSEST, SpatialReq.Influence.AWARE,
+                new Location(0,0)));
+        //reqs.add(new TypeReq(new TypeReq.Type[]{TypeReq.Type.LIGHT}));
+
+        snapshot = new Warble(this);
+        while(!snapshot.initialized()){}
+        Light light = snapshot.retrieve(Light.class, reqs);
+        try {
+            light.on();
+        } catch (DeviceUnavailableException e) {
+            e.printStackTrace();
+        }
+
+
+        //Abstraction ---------------
+        //1) Sign in to wink with RAw HTTP
+        //2) Get a list of devices Raw HTTP
+        //3) Go through list of devices, find closest
+        //4) Turn device on
+
+
+
+
+
+        //-----------------
+
+
         reqs = new ArrayList<DeviceReq>();
         reqs.add(new SpatialReq(SpatialReq.Bound.CLOSEST, SpatialReq.Influence.AWARE,
                                 new Location(0,0)));
