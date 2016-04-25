@@ -84,6 +84,9 @@ public class Warble {
 
 
     public synchronized boolean initialized(){
+        if(devManager == null){
+            return false;
+        }
         return devManager.isInitialized();
     }
 

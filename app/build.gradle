@@ -27,4 +27,6 @@ dependencies {
     compile 'com.android.support:design:23.1.1'
     compile 'com.loopj.android:android-async-http:1.4.9'
     testCompile files('/Users/nathanielwendt/Documents/Texas/Research/IoTInfluence/lib/jheatchart-0.6.jar')
+    testCompile 'org.apache.commons:commons-math3:3.6.1'
+
 }

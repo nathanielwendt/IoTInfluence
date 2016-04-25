@@ -14,9 +14,9 @@ import nathanielwendt.mpc.ut.edu.iotinfluence.models.DeviceModel;
  */
 public class SpatialReqOperator extends AggregateReqOperator {
     private final static double REF_THRESH = 5;
-    private final static double REF_WEIGHT = 2; //2
+    private final static double REF_WEIGHT = 2;  //2
     private final static double DEV_THRESH = 5;
-    private final static double DEV_WEIGHT = .3; //1
+    private final static double DEV_WEIGHT = .3; //.3
 
     private final SpatialReq req;
 

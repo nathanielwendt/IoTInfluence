@@ -46,4 +46,14 @@ public class IntersectionTest {
         Assert.assertTrue(Geometry.doLinesIntersect(vertical, new Geometry.LineSegment(0, 0, 2, 2)));
         Assert.assertTrue(Geometry.doLinesIntersect(vertical, new Geometry.LineSegment(0, 3, 3, 3)));
     }
+
+    @Test
+    public void testSpecial() {
+
+        System.out.println(Geometry.doLinesIntersect(new Geometry.LineSegment(10, 8, 10, 14), new Geometry.LineSegment(9,11,12,11)));
+        System.out.println(Geometry.doLinesIntersect(new Geometry.LineSegment(10, 8, 10, 14), new Geometry.LineSegment(12,11,9,11)));
+        System.out.println(Geometry.doLinesIntersect(new Geometry.LineSegment(10, 8, 10, 14), new Geometry.LineSegment(12,11,9,11)));
+        System.out.println(Geometry.doLinesIntersect(new Geometry.LineSegment(12,11,9,11), new Geometry.LineSegment(10, 8, 10, 14)));
+
+    }
 }

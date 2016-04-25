@@ -8,6 +8,10 @@ public class SampleResult {
 
     public SampleResult(){}
 
+    public boolean isEmpty(){
+        return ids.isEmpty();
+    }
+
     public SampleResult(String id){
         ids.add(id);
     }
