@@ -2,10 +2,20 @@ package nathanielwendt.mpc.ut.edu.iotinfluence.service;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.BluetoothLeScanner;
+import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanRecord;
+import android.bluetooth.le.ScanResult;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Handler;
+import android.os.ParcelUuid;
+import android.util.Log;
 import android.widget.Toast;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import nathanielwendt.mpc.ut.edu.iotinfluence.R;
 
@@ -18,124 +28,93 @@ public class ServiceManager {
     private Handler mHandler;
     private Context ctx;
     private static final int SCAN_PERIOD = 5000;
+    private ScanCallback scanCallback;
+
+    final List<String> serviceIds = new ArrayList<>();
 
     public ServiceManager(Context ctx) {
         this.ctx = ctx;
 
+        //setup scanning
         mHandler = new Handler();
-
-        // Use this check to determine whether BLE is supported on the device.  Then you can
-        // selectively disable BLE-related features.
         if (!this.ctx.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             Toast.makeText(ctx, R.string.ble_not_supported, Toast.LENGTH_SHORT).show();
         }
-        // Initializes a Bluetooth adapter.  For API level 18 and above, get a reference to
-        // BluetoothAdapter through BluetoothManager.
         final android.bluetooth.BluetoothManager bluetoothManager =
                 (android.bluetooth.BluetoothManager) this.ctx.getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = bluetoothManager.getAdapter();
-
-        // Checks if Bluetooth is supported on the device.
         if (mBluetoothAdapter == null) {
             Toast.makeText(this.ctx, R.string.error_bluetooth_not_supported, Toast.LENGTH_SHORT).show();
             return;
         }
-
         mBluetoothScanner = mBluetoothAdapter.getBluetoothLeScanner();
     }
 
-    public void scan(final FindServiceCallback findCallback){
-        findCallback.onService(ServiceLookup.lookup("63:3353:5363:2324"));
-        findCallback.done();
-//        final ScanCallback scanCallback = new ScanCallback() {
-//            @Override
-//            public void onScanResult(int callbackType, ScanResult result) {
-//                super.onScanResult(callbackType, result);
-//                Service service = ServiceLookup.lookup(result.getDevice().getAddress());
-//                findCallback.onService(service);
-//            }
-//
-//            @Override
-//            public void onBatchScanResults(List<ScanResult> results) {
-//                super.onBatchScanResults(results);
-//
-//            }
-//
-//            @Override
-//            public void onScanFailed(int errorCode) {
-//                super.onScanFailed(errorCode);
-//            }
-//        };
-//
-//        mBluetoothScanner.startScan(scanCallback);
-//        mHandler.postDelayed(new Runnable() {
-//            @Override
-//            public void run() {
-//                mBluetoothScanner.stopScan(scanCallback);
-//                findCallback.done();
-//            }
-//        }, SCAN_PERIOD);
+    private String extractCommand(ScanResult result){
+        Map<ParcelUuid, byte[]> res = result.getScanRecord().getServiceData();
+        for(Map.Entry<ParcelUuid, byte[]> item : res.entrySet()){
+            return new String(item.getValue(), StandardCharsets.UTF_8);
+        }
+        return "";
     }
 
-//    public List<Service> scan(){
-//        List<ScanResult> scanResults = scan(SCAN_PERIOD);
-//        List<Service> services = new ArrayList<Service>();
-//        for(ScanResult result : scanResults){
-//            Service service = ServiceLookup.lookup(result.getDevice().getAddress());
-//            services.add(service);
-//        }
-//        return services;
-//    }
-//
-//
-//    private List<ScanResult> scan(int ms) {
-//        final AtomicReference<List<ScanResult>> notifier = new AtomicReference<List<ScanResult>>();
-//
-//        final ScanCallback callback = new ScanCallback() {
-//            @Override
-//            public void onScanResult(int callbackType, ScanResult result) {
-//                super.onScanResult(callbackType, result);
-//                synchronized (notifier) {
-//                    List<ScanResult> results = new ArrayList<>();
-//                    results.add(result);
-//                    notifier.set(results);
-//                    notifier.notify();
-//                }
-//            }
-//
-//            @Override
-//            public void onBatchScanResults(List<ScanResult> results) {
-//                super.onBatchScanResults(results);
-//                synchronized (notifier) {
-//                    notifier.set(results);
-//                    notifier.notify();
-//                }
-//            }
-//
-//            @Override
-//            public void onScanFailed(int errorCode) {
-//                super.onScanFailed(errorCode);
-//            }
-//        };
-//
-//        mBluetoothScanner.startScan(callback);
-//        mHandler.postDelayed(new Runnable() {
-//            @Override
-//            public void run() {
-//                mBluetoothScanner.stopScan(callback);
-//            }
-//        }, ms);
-//
-//        synchronized (notifier) {
-//            while (notifier.get() == null)
-//                try {
-//                    notifier.wait();
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-//        }
-//        return notifier.get();
-//    }
+    public void scan(final FindServiceCallback findCallback){
+        //findCallback.onService(ServiceLookup.lookup("63:3353:5363:2324"));
+        //findCallback.done();
+
+        scanCallback = new ScanCallback() {
+            @Override
+            public void onScanResult(int callbackType, ScanResult result) {
+                super.onScanResult(callbackType, result);
+                //System.out.println(result.toString());
+
+                //check address from beacon first
+                String serviceId = result.getDevice().getAddress();
+                Service service = ServiceLookup.lookup(serviceId);
+
+                //check id embedded in beacon payload
+                if(service == null){
+                    ScanRecord scanRecord = result.getScanRecord();
+                    List<ParcelUuid> uuids = scanRecord.getServiceUuids();
+                    if(uuids != null){
+                        serviceId = uuids.get(0).toString();
+                        service = ServiceLookup.lookup(serviceId);
+                    }
+                }
+
+                if(service != null){
+                    if(!serviceIds.contains(serviceId)){
+                        Log.d("SERVICE", "found service: " + serviceId);
+                        serviceIds.add(serviceId);
+                        findCallback.onService(service);
+                    }
+                }
+            }
+
+            @Override
+            public void onBatchScanResults(List<ScanResult> results) {
+                super.onBatchScanResults(results);
+
+            }
+
+            @Override
+            public void onScanFailed(int errorCode) {
+                super.onScanFailed(errorCode);
+            }
+        };
+
+        //TODO: add scan filters to only find appropriate devices
+        mBluetoothScanner.startScan(scanCallback);
+
+        mHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    Log.d("SERVICE", "stopping ble scanning");
+                    mBluetoothScanner.stopScan(scanCallback);
+                    findCallback.done();
+                }
+        }, SCAN_PERIOD);
+    }
 
     public interface FindServiceCallback {
         void onService(Service service);

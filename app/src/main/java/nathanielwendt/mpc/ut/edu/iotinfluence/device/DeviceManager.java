@@ -12,7 +12,7 @@ public interface DeviceManager {
 
     public void scan();
     public void scan(InitializedCallback callback);
-    public boolean isInitialized();
+    public boolean initialized();
 
     public <D extends Device> List<DeviceModel> fetchDevices(Class<D> clazz);
     public List<DeviceModel> fetchDevices();

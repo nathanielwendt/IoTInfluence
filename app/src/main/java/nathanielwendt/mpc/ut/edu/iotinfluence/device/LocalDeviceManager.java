@@ -1,7 +1,6 @@
 package nathanielwendt.mpc.ut.edu.iotinfluence.device;
 
 import android.content.Context;
-import android.os.AsyncTask;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,81 +19,74 @@ public class LocalDeviceManager implements DeviceManager {
     Context ctx;
     ServiceManager serviceManager;
     volatile boolean initialized = false;
+    private final Object lock = new Object();
 
     public LocalDeviceManager(Context ctx){
         this.ctx = ctx;
         serviceManager = new ServiceManager(ctx);
     }
 
-    private class ScanTask extends AsyncTask<InitializedCallback, Void, Void> {
-
-        @Override
-        protected Void doInBackground(final InitializedCallback... params) {
-            serviceManager.scan(new ServiceManager.FindServiceCallback(){
-                @Override public void onService(Service service){
-                    services.add(service);
-                    service.fetchDevices(new Service.FetchDevicesCallback(){
-                        @Override public void onFetch(List<DeviceModel> fetchedDevices){
-                            devices.addAll(fetchedDevices);
-                        }
-                    });
-                }
-
-                @Override public void done(){
-                    initialized = true;
-                    //should be single param, but need loop to access varargs
-                    for(InitializedCallback cb : params){ cb.onInit(); }
-                }
-            });
-            return null;
+    public boolean initialized(){
+        synchronized(lock){
+            return initialized;
         }
     }
 
+    public void setInitialized(boolean initialized){
+        synchronized(lock){
+            this.initialized = initialized;
+        }
+    }
+
+//    private class ScanTask extends AsyncTask<InitializedCallback, Void, Void> {
+//
+//        @Override
+//        protected Void doInBackground(final InitializedCallback... params) {
+//            serviceManager.scan(new ServiceManager.FindServiceCallback(){
+//                @Override public void onService(Service service){
+//                    services.add(service);
+//                    service.fetchDevices(new Service.FetchDevicesCallback(){
+//                        @Override public void onFetch(List<DeviceModel> fetchedDevices){
+//                            devices.addAll(fetchedDevices);
+//                        }
+//                    });
+//                }
+//
+//                @Override public void done(){
+//                    setInitialized(true);
+//                    //should be single param, but need loop to access varargs
+//                    for(InitializedCallback cb : params){ cb.onInit(); }
+//                }
+//            });
+//            return null;
+//        }
+//    }
+
     @Override
     public void scan() {
-        ScanTask scanTask = new ScanTask();
-        scanTask.execute();
+        throw new RuntimeException("not implemented yet");
     }
 
     @Override
     public void scan(final InitializedCallback callback){
-        ScanTask scanTask = new ScanTask();
-        scanTask.execute(callback);
-//
-//
-//        serviceManager.scan(new ServiceManager.FindServiceCallback(){
-//            @Override public void onService(Service service){
-//                services.add(service);
-//                service.fetchDevices(new Service.FetchDevicesCallback(){
-//                    @Override public void onFetch(List<DeviceModel> fetchedDevices){
-//                        devices.addAll(fetchedDevices);
-//                        done();
-//                    }
-//                });
-//            }
-//
-//            @Override public void done(){
-//                initialized = true;
-//                callback.onInit();
-//            }
-//        });
-    }
+        //throw new RuntimeException("Not completed yet");
 
-    public boolean isInitialized(){
-        return initialized;
-    }
+        serviceManager.scan(new ServiceManager.FindServiceCallback(){
+            @Override public void onService(Service service){
+                services.add(service);
+                service.fetchDevices(new Service.FetchDevicesCallback(){
+                    @Override public void onFetch(List<DeviceModel> fetchedDevices){
+                        devices.addAll(fetchedDevices);
+                    }
+                });
+            }
 
-//    private <D extends Device> String getClazzIdentifier(Class<D> clazz){
-//        try {
-//            Field idField = clazz.getField(Device.identifierField);
-//            idField.setAccessible(true);
-//            return (String) idField.get(clazz);
-//        } catch (NoSuchFieldException | IllegalAccessException e) {
-//            //class may not have indicated identifier field
-//            e.printStackTrace();
-//            return ""; //to-do better error visibility for client
-//        }
-//    }
+            @Override public void done(){
+                setInitialized(true);
+                callback.onInit();
+            }
+        });
+    }
 
     @Override
     public <D extends Device> List<DeviceModel> fetchDevices(Class<D> clazz) {

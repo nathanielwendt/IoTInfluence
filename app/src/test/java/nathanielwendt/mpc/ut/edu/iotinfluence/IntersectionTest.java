@@ -49,11 +49,9 @@ public class IntersectionTest {
 
     @Test
     public void testSpecial() {
-
         System.out.println(Geometry.doLinesIntersect(new Geometry.LineSegment(10, 8, 10, 14), new Geometry.LineSegment(9,11,12,11)));
         System.out.println(Geometry.doLinesIntersect(new Geometry.LineSegment(10, 8, 10, 14), new Geometry.LineSegment(12,11,9,11)));
         System.out.println(Geometry.doLinesIntersect(new Geometry.LineSegment(10, 8, 10, 14), new Geometry.LineSegment(12,11,9,11)));
         System.out.println(Geometry.doLinesIntersect(new Geometry.LineSegment(12,11,9,11), new Geometry.LineSegment(10, 8, 10, 14)));
-
     }
 }

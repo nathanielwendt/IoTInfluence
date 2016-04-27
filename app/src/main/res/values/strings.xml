@@ -13,5 +13,6 @@
     <string name="menu_scan">Scan</string>
     <string name="menu_stop">Stop</string>
     <string name="title_activity_test_spatial">TestSpatial</string>
+    <string name="title_activity_ble">BLEActivity</string>
 
 </resources>

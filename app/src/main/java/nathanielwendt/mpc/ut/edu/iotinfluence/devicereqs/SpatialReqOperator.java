@@ -13,10 +13,14 @@ import nathanielwendt.mpc.ut.edu.iotinfluence.models.DeviceModel;
  * Created by nathanielwendt on 3/23/16.
  */
 public class SpatialReqOperator extends AggregateReqOperator {
-    private final static double REF_THRESH = 5;
-    private final static double REF_WEIGHT = 2;  //2
-    private final static double DEV_THRESH = 5;
-    private final static double DEV_WEIGHT = .3; //.3
+    public static double DistToHistoryRatio = 9.5;
+
+
+    private final static double INFLUENCE = 15;
+    private final static double REF_THRESH = 50;
+    private final static double REF_WEIGHT = 1;  //2
+    private final static double DEV_THRESH = 50;
+    private final static double DEV_WEIGHT = .2; //.3
 
     private final SpatialReq req;
 
@@ -33,39 +37,40 @@ public class SpatialReqOperator extends AggregateReqOperator {
         double knowledge;
         for(DeviceModel candidate : candidates) {
             knowledge = 0.0;
+            int posCount = 0;
+            int negCount = 0;
+            double posKnowledge = 0.0;
+            double negKnowledge = 0.0;
             if (this.req.influence == SpatialReq.Influence.AWARE) {
                 if (candidate.location() != null) {
                     if(this.req.requesterLoc == null){ throw new RuntimeException("Requester Loc is Null and is required"); }
                     actions = LocalActionDB.query(this.req.requesterLoc,
                                                     candidate.location(),
-                                                    DEV_THRESH);
+                                                    INFLUENCE);
                 } else {
                     actions = LocalActionDB.query(this.req.requesterLoc,
-                                                    DEV_THRESH);
+                                                    INFLUENCE);
                 }
 
-                int posCount = 0;
-                int negCount = 0;
-                double posKnowledge = 0.0;
-                double negKnowledge = 0.0;
                 for (Action action : actions) {
                     if (action.devLocation != null) {
-                        double refDist = Location.distance(action.refLocation, this.req.requesterLoc);
-                        double devDist = Location.distance(action.devLocation, candidate.location());
+                        double refDist = Location.distance(action.refLocation, this.req.requesterLoc, .25);
+                        double devDist = Location.distance(action.devLocation, candidate.location(), .25);
 
                         if(action.successful){
-                            posKnowledge += ((REF_WEIGHT * (REF_THRESH - refDist)) +
-                                    (DEV_WEIGHT * (DEV_THRESH - devDist)));
+                            double refValue = REF_THRESH - refDist; //0 - 50
+                            double devValue = DEV_THRESH - devDist; //0 - 50
+                            double adjRefValue = refValue * REF_WEIGHT; //0 - 50
+                            double adjDevValue = refValue * DEV_WEIGHT; //0 - 10
+                            posKnowledge += ((REF_WEIGHT * (REF_THRESH - refDist)) *
+                                    (DEV_WEIGHT * (DEV_THRESH - devDist)));  //0 - 500
                             posCount++;
                         } else {
-                            negKnowledge += ((REF_WEIGHT * (REF_THRESH - refDist)) +
+                            negKnowledge += ((REF_WEIGHT * (REF_THRESH - refDist)) *
                                     (DEV_WEIGHT * (DEV_THRESH - devDist)));
                             negCount++;
                         }
-//                        double sign = (action.successful) ? 1 : -1;
-//                        knowledge += sign * ((REF_WEIGHT * (REF_THRESH - refDist)) +
-//                                (DEV_WEIGHT * (DEV_THRESH - devDist))
-//                        );
+
                     } else {
                         //TODO- not adapted for new algorithm!!!
                         throw new RuntimeException("Not implemented yet");
@@ -77,11 +82,11 @@ public class SpatialReqOperator extends AggregateReqOperator {
 
                 //knowledge = posKnowledge - negKnowledge;
                 if (posCount != 0) {
-                    knowledge += posKnowledge / posCount;
+                    knowledge += posKnowledge / (posCount);
                 }
 
                 if (negCount != 0) {
-                    knowledge -= 2 * negKnowledge / negCount;
+                    knowledge -= negKnowledge / (negCount) ;
                 }
             }
 
@@ -96,7 +101,6 @@ public class SpatialReqOperator extends AggregateReqOperator {
 
         List<DeviceModel> res = new ArrayList<DeviceModel>();
         for(RelevancePoint point : relPoints){
-            //System.out.println(point.getDeviceModel().id + " >> " + point.relevance());
             res.add(point.getDeviceModel());
         }
 
@@ -104,7 +108,7 @@ public class SpatialReqOperator extends AggregateReqOperator {
     }
 
     public static class RelevancePoint {
-        private static final double RELEVANCE_THRESH = 100.0;
+        private static final double RELEVANCE_THRESH = 20.0;
         private final double knowledge;
         private final double refDist;
         private final DeviceModel dev;
@@ -122,7 +126,8 @@ public class SpatialReqOperator extends AggregateReqOperator {
             this.knowledge = knowledge;
             this.refDist = refDist;
             this.dev = dev;
-            this.relevance = this.knowledge + (RELEVANCE_THRESH - this.refDist);
+            //System.out.println(this.knowledge + " , " + (RELEVANCE_THRESH - this.refDist));
+            this.relevance = this.knowledge + (RELEVANCE_THRESH - this.refDist) * DistToHistoryRatio;
         }
 
         public DeviceModel getDeviceModel(){

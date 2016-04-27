@@ -63,9 +63,20 @@ public class LocalActionDB {
         return res;
     }
 
+    public static void clear(){
+        actions.clear();
+        pending.clear();
+    }
+
     public static List<Action> query(Location r, double range){
-        throw new RuntimeException("not implemented yet");
-        //return new ArrayList<Action>();
+        List<Action> res = new ArrayList<>();
+        for(Action action : actions.values()){
+            double distToRef = Location.distance(action.refLocation, r);
+            if(distToRef <= range){
+                res.add(action);
+            }
+        }
+        return res;
     }
 
     private static class PendingAction {

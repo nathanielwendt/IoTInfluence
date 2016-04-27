@@ -76,7 +76,9 @@ public abstract class Grid {
                 double area = getAreaOfWeight(weight);
                 double adjustedProb = (area / totalArea) * weight.prob;
                 adjustedProbs.put(weight, adjustedProb);
+                System.out.println(weight.getProb() + " --> " + adjustedProb);
             }
+            System.out.println("-----------");
         }
 
         private Map<Zone.Weight, Double> adjustedProbs = new HashMap<>();
@@ -84,8 +86,8 @@ public abstract class Grid {
         public double getAdjustedProbAtLoc(Location loc){
             Zone.Weight weight = getWeightAtLoc(loc);
             if(weight == null){ throw new RuntimeException(loc.toString()); }
-            return weight.getProb();
-            //return adjustedProbs.get(weight);
+            //return weight.getProb();
+            return adjustedProbs.get(weight);
         }
     }
 
@@ -206,11 +208,6 @@ public abstract class Grid {
     }
 
     public Location[] getProbLocs(int numSamples){
-
-        for(Zone.Weight weight :Zone.Weight.values()){
-            System.out.println(weight.prob + " >> " + weight.getProb());
-        }
-
         int numWeights = Zone.Weight.values().length;
         int[] indexes = new int[numWeights];
         double[] probs = new double[numWeights];

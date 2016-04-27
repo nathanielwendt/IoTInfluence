@@ -1,1 +1,1 @@
-include ':app', ':jheatchart-0.6'
+include ':app', ':jheatchart-0.6', ':devicelight'

@@ -26,14 +26,14 @@ import nathanielwendt.mpc.ut.edu.iotinfluence.util.TestService;
  */
 public class EvaluationRunner {
     public static int DIM = 25;
-    public static int TRAIN_STEP = 3;
+    public static int TRAIN_STEP = 1;
     public static Location[] TRAINING_LOCS;
     public static Location[] DEF_GRID_SAMPLES = new Location[(DIM + 1) * (DIM + 1)];
     public Warble warble;
     public static boolean DUPLICATE_TRAINING = false;
 
     static {
-        buildTraining(1);
+        buildTraining(3);
 
         int count = 0;
         for(int y = 0; y <= DIM; y++){
@@ -97,9 +97,9 @@ public class EvaluationRunner {
 
         String[] resultsWarble = evaluateWarble(grid, DEF_GRID_SAMPLES);
         Grid.SampleResult[] resultsGroundTruth = evaluateGroundTruth(grid, DEF_GRID_SAMPLES);
-//        printResults(resultsGroundTruth, resultsWarble);
-//
-//        System.out.println("-----------------------------------------------");
+        printResults(resultsGroundTruth, resultsWarble);
+
+        System.out.println("-----------------------------------------------");
 
         List<Location> resultsTraining = trainWarble(grid, TRAINING_LOCS, DUPLICATE_TRAINING);
         System.out.println("Number of training samples: " + TRAINING_LOCS.length);

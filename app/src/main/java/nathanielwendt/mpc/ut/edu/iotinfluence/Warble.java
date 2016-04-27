@@ -5,6 +5,8 @@ import android.content.Context;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
 
 import nathanielwendt.mpc.ut.edu.iotinfluence.db.LocalActionDB;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.Device;
@@ -33,11 +35,20 @@ public class Warble {
     DeviceManager devManager;
     Context ctx;
     private int reqCount = 0;
+    Observable initObserver;
+
 
     public Warble(Context ctx){
         //scan for services
         //populate services and devices tables
         this.ctx = ctx;
+        initObserver = new Observable(){
+            @Override
+            public void addObserver(Observer observer) {
+                super.addObserver(observer);
+                this.setChanged();
+            }
+        };
     }
 
     public void setDevManager(DeviceManager devManager){
@@ -48,7 +59,11 @@ public class Warble {
         if(devManager == null){
             devManager = new LocalDeviceManager(ctx);
         }
-        devManager.scan();
+        devManager.scan(new InitializedCallback(){
+            @Override public void onInit(){
+                initObserver.notifyObservers();
+            }
+        });
     }
 
     public void initialize(final InitializedCallback callback){
@@ -59,11 +74,25 @@ public class Warble {
         devManager.scan(new InitializedCallback(){
             @Override public void onInit(){
                 callback.onInit();
+                initObserver.notifyObservers();
             }
         });
 
 //        InitializeTask initTask = new InitializeTask();
 //        initTask.execute(callback);
+    }
+
+    public void whenInit(final InitializedCallback callback){
+        if(initialized()){
+            callback.onInit();
+        } else {
+            initObserver.addObserver(new Observer() {
+                @Override
+                public void update(Observable observable, Object data) {
+                    callback.onInit();
+                }
+            });
+        }
     }
 
 //    private class InitializeTask extends AsyncTask<InitializedCallback, Void, Void> {
@@ -83,11 +112,11 @@ public class Warble {
 //    }
 
 
-    public synchronized boolean initialized(){
+    public boolean initialized(){
         if(devManager == null){
             return false;
         }
-        return devManager.isInitialized();
+        return devManager.initialized();
     }
 
     //default, don't scan for new devices
@@ -127,7 +156,13 @@ public class Warble {
             devices = operator.resolve(devices);
         }
 
-        List<DeviceModel> finalDevices = devices.subList(0, N);
+        List<DeviceModel> finalDevices;
+        if(devices.size() >= N){
+            finalDevices = devices.subList(0, N);
+        } else {
+            finalDevices = devices;
+        }
+
 
         //transform to actual device rather than model version
         //cast to specific <D> class
@@ -162,7 +197,11 @@ public class Warble {
 
     public <D extends Device> D retrieve(Class<D> clazz, List<DeviceReq> reqs){
         List<D> items = retrieve(clazz, reqs, 1);
-        return items.get(0);
+        if(items.size() > 0){
+            return items.get(0);
+        } else {
+            return null;
+        }
     }
 
     public List<Device> retrieveMixed(List<DeviceReq> reqs){
