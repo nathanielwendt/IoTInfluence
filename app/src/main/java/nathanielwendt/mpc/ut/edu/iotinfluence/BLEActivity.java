@@ -30,8 +30,8 @@ public class BLEActivity extends AppCompatActivity {
         //reqs.add(new TypeReq(new TypeReq.Type[]{TypeReq.Type.LIGHT}));
 
         final Warble snapshot = new Warble(this);
-        snapshot.initialize();
-//        snapshot.initialize(new InitializedCallback() {
+        snapshot.discover();
+//        snapshot.discover(new InitializedCallback() {
 //            @Override
 //            public void onInit() {
 //                Light light = snapshot.retrieve(Light.class, reqs);
@@ -47,7 +47,7 @@ public class BLEActivity extends AppCompatActivity {
 //        });
 
 
-        snapshot.whenInit(new InitializedCallback() {
+        snapshot.whenDiscovered(new InitializedCallback() {
             @Override
             public void onInit() {
                 Light light = snapshot.retrieve(Light.class, reqs);

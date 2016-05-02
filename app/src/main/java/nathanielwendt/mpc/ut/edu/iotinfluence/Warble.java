@@ -7,7 +7,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.UUID;
 
+import nathanielwendt.mpc.ut.edu.iotinfluence.db.Action;
 import nathanielwendt.mpc.ut.edu.iotinfluence.db.LocalActionDB;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.Device;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.DeviceCommand;
@@ -34,7 +36,6 @@ public class Warble {
     Device lastDevice = null;
     DeviceManager devManager;
     Context ctx;
-    private int reqCount = 0;
     Observable initObserver;
 
 
@@ -55,7 +56,7 @@ public class Warble {
         this.devManager = devManager;
     }
 
-    public void initialize(){
+    public void discover(){
         if(devManager == null){
             devManager = new LocalDeviceManager(ctx);
         }
@@ -66,7 +67,7 @@ public class Warble {
         });
     }
 
-    public void initialize(final InitializedCallback callback){
+    public void discover(final InitializedCallback callback){
         if(devManager == null){
             devManager = new LocalDeviceManager(ctx);
         }
@@ -77,13 +78,10 @@ public class Warble {
                 initObserver.notifyObservers();
             }
         });
-
-//        InitializeTask initTask = new InitializeTask();
-//        initTask.execute(callback);
     }
 
-    public void whenInit(final InitializedCallback callback){
-        if(initialized()){
+    public void whenDiscovered(final InitializedCallback callback){
+        if(hasDiscovered()){
             callback.onInit();
         } else {
             initObserver.addObserver(new Observer() {
@@ -95,36 +93,71 @@ public class Warble {
         }
     }
 
-//    private class InitializeTask extends AsyncTask<InitializedCallback, Void, Void> {
-//
-//        @Override
-//        protected Void doInBackground(final InitializedCallback... params) {
-//            devManager.scan(new InitializedCallback() {
-//                @Override
-//                public void onInit() {
-//                    for (InitializedCallback cb : params) {
-//                        cb.onInit();
-//                    }
-//                }
-//            });
-//            return null;
-//        }
-//    }
-
-
-    public boolean initialized(){
+    public boolean hasDiscovered(){
         if(devManager == null){
             return false;
         }
         return devManager.initialized();
     }
 
-    //default, don't scan for new devices
     public <D extends Device> List<D> retrieve(Class<D> clazz, List<DeviceReq> reqs, int N){
-        if(!initialized()){ throw new IllegalStateException("Warble is not initialized"); }
+        List<Device> finalDevices = this.retrieve(reqs, N);
+
+        //transform to actual device rather than model version
+        //cast to specific <D> class
+        String requestId = getNewRequestId();
+
+        List<D> retList = new ArrayList<>();
+        for(Device device : finalDevices){
+            retList.add(clazz.cast(device));
+        }
+
+        return retList;
+    }
+
+    public <D extends Device> D retrieve(Class<D> clazz, List<DeviceReq> reqs){
+        List<D> items = retrieve(clazz, reqs, 1);
+        if(items.size() > 0){
+            return items.get(0);
+        } else {
+            return null;
+        }
+    }
+
+    public List<Device> retrieve(List<DeviceReq> reqs, int N){
+        String requestId = getNewRequestId();
+        List<Device> finalDevices = retrieveHelper(null, reqs, N, requestId);
+        return finalDevices;
+    }
+
+    public <D extends Device> void act(final Class<D> clazz, final List<DeviceReq> reqs, final int N,
+                        final DeviceCommand command){
+        this.whenDiscovered(new InitializedCallback() {
+            @Override
+            public void onInit() {
+                List<D> devices = Warble.this.retrieve(clazz, reqs, N);
+                for(D device : devices){
+                    try {
+                        command.onBind(device);
+                    } catch (DeviceUnavailableException e){
+                        //TODO: generate warning to client
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+    }
+
+    private <D extends Device> List<Device> retrieveHelper(Class<D> clazz, List<DeviceReq> reqs, int N, String requestId){
+        if(!hasDiscovered()){ throw new IllegalStateException("Warble is not hasDiscovered"); }
 
         //query to get the list of all available devices
-        List<DeviceModel> devices = devManager.fetchDevices(clazz);
+        List<DeviceModel> devices;
+        if(clazz != null){
+            devices = devManager.fetchDevices(clazz);
+        } else {
+            devices = devManager.fetchDevices();
+        }
 
         List<AggregateReqOperator> aggregateOperators = new ArrayList<AggregateReqOperator>();
         List<ItemwiseReqOperator> itemwiseOperators = new ArrayList<ItemwiseReqOperator>();
@@ -163,56 +196,41 @@ public class Warble {
             finalDevices = devices;
         }
 
-
-        //transform to actual device rather than model version
-        //cast to specific <D> class
-        List<D> retList = new ArrayList<>();
-        String requestId = getNewRequestId();
         Location refLoc = null;
         for(DeviceReq req : reqs){
             if(req instanceof SpatialReq){
                 refLoc = ((SpatialReq) reqs.get(0)).loc();
-               // requestingRefLocs.put(requestId, refLoc);
             }
         }
 
+        List<Device> ret = new ArrayList<>();
         LocalActionDB.insertPending(requestId, refLoc);
         for(DeviceModel device : finalDevices){
-            Device temp = device.abs(requestId);
-            retList.add(clazz.cast(temp));
             //populate local histories
+            Device temp = device.abs(requestId);
+            ret.add(temp);
             LocalActionDB.populatePending(requestId, device.id, device.location());
         }
-        return retList;
+
+        return ret;
     }
 
     public void help(String requestId, String deviceId){
+        //update previous entry, indicating it failed
         LocalActionDB.update(requestId, deviceId, false);
-        //To-do rollback
-    }
 
-    public String getNewRequestId(){
-        return "req" + String.valueOf(reqCount++);
-    }
-
-    public <D extends Device> D retrieve(Class<D> clazz, List<DeviceReq> reqs){
-        List<D> items = retrieve(clazz, reqs, 1);
-        if(items.size() > 0){
-            return items.get(0);
-        } else {
-            return null;
+        //rollback action
+        Action badAction = LocalActionDB.getAction(requestId, deviceId);
+        try {
+            badAction.type.undo();
+        } catch (DeviceUnavailableException e) {
+            e.printStackTrace();
         }
     }
 
-    public List<Device> retrieveMixed(List<DeviceReq> reqs){
-        if(!initialized()){ throw new IllegalStateException("Warble is not initialized"); }
-        return null;
-    }
-
-    public <D> void act(Class<D> clazz, List<DeviceReq> reqs, int N,
-                           DeviceCommand command){
-        //do we want to check for initialized here?
-        //perhaps just give a warning?
+    private String getNewRequestId(){
+        UUID uuid = UUID.randomUUID();
+        return uuid.toString();
     }
 
     public static class Commands {

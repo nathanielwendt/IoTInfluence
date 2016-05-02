@@ -22,6 +22,7 @@ import nathanielwendt.mpc.ut.edu.iotinfluence.util.EvaluationAction;
 import nathanielwendt.mpc.ut.edu.iotinfluence.util.Geometry;
 import nathanielwendt.mpc.ut.edu.iotinfluence.util.Grid;
 import nathanielwendt.mpc.ut.edu.iotinfluence.util.SampleResult;
+import nathanielwendt.mpc.ut.edu.iotinfluence.util.Statistics;
 import nathanielwendt.mpc.ut.edu.iotinfluence.util.TestDevManager;
 import nathanielwendt.mpc.ut.edu.iotinfluence.util.TestService;
 import nathanielwendt.mpc.ut.edu.iotinfluence.util.TrainingAction;
@@ -86,31 +87,34 @@ public class AdvancedEvaluationRunner {
             partitions.add(new Geometry.LineSegment(10, 8, 20, 8));
             partitions.add(new Geometry.LineSegment(13, 8, 13, 14));
 
+            Grid.HOT_WEIGHT = .6;
+            Grid.MED_WEIGHT = .25;
+            Grid.COLD_WEIGHT = .15;
 
-            //Don't include upper bounds in zones (e.g. width=20, upperbound should be 19, not 20)
-            //used decimal values to make the heatmap look better, should affect probabilities negligibly
-            zoneManager.add(new Zone(3,7,3,11), Zone.Weight.HOT); //living main
-            zoneManager.add(new Zone(7.001,17,3,5), Zone.Weight.HOT); //kitchen main
-            zoneManager.add(new Zone(13,19,8,13), Zone.Weight.MED); //bathroom
-            zoneManager.add(new Zone(10,13,8,13), Zone.Weight.MED); //closet
-            zoneManager.add(new Zone(0,2.99,0,13), Zone.Weight.COLD);
-            zoneManager.add(new Zone(0,19,0,2.99), Zone.Weight.COLD);
-            zoneManager.add(new Zone(17.001,19,2.001,7.001), Zone.Weight.COLD);
-            zoneManager.add(new Zone(7.001,17.99,5.001,7.99), Zone.Weight.HOT); //target area
-            zoneManager.add(new Zone(3,9.99,11.001,13), Zone.Weight.HOT);
-            zoneManager.add(new Zone(8,9,8,11), Zone.Weight.COLD);
+            zoneManager.add(new Zone(2,6,2,11), Zone.Weight.HOT); //living main
+            zoneManager.add(new Zone(6,16,2,4), Zone.Weight.HOT); //kitchen main
+            zoneManager.add(new Zone(12,19,7,13), Zone.Weight.MED); //bathroom
+            zoneManager.add(new Zone(9,12,7,13), Zone.Weight.COLD); //closet
+
+            zoneManager.add(new Zone(0,2,0,13), Zone.Weight.COLD);
+            zoneManager.add(new Zone(2,16,0,2), Zone.Weight.COLD);
+            zoneManager.add(new Zone(16,19,0,7), Zone.Weight.COLD);
+            zoneManager.add(new Zone(6,16,4,7), Zone.Weight.COLD); //h
+            zoneManager.add(new Zone(6,9,7,13), Zone.Weight.COLD); //i
+            zoneManager.add(new Zone(2,6,10,13), Zone.Weight.COLD);
         }
     }
 
-    public static class StudioGrid2 extends Grid {
-        public StudioGrid2(double step) {
+    public static class OneBedroomGrid extends Grid {
+        public OneBedroomGrid(double step) {
             this.step = step;
             this.width = 19;
             this.height = 28;
 
             Location[] lightLocs = new Location[]{new Location(5, 21), new Location(9, 15),
-                    new Location(14, 21), new Location(14, 19),
-                    new Location(7, 7), new Location(13,7)};
+                    new Location(14, 21), new Location(18, 16),
+                    new Location(2, 1), new Location(9,1),
+                    new Location(15,7)};
 
             Service testService = new TestService();
             int count = 0;
@@ -122,15 +126,38 @@ public class AdvancedEvaluationRunner {
                 devices.add(dev);
             }
 
+            Grid.HOT_WEIGHT = .3;
+            Grid.MED_WEIGHT = .1;
+            Grid.COLD_WEIGHT = .5;
+
+//            Grid.HOT_WEIGHT = .30;
+//            Grid.MED_WEIGHT = .22;
+//            Grid.COLD_WEIGHT = .48;
+
+
             partitions.add(new Geometry.LineSegment(0, 14, 10, 14));
-            partitions.add(new Geometry.LineSegment(10, 14, 10, 27));
+            partitions.add(new Geometry.LineSegment(10, 14, 10, 28));
             partitions.add(new Geometry.LineSegment(10, 20, 19, 20));
+            partitions.add(new Geometry.LineSegment(10, 0, 10, 8));
 
-            zoneManager.add(new Zone(0,10,14,27), Zone.Weight.MED);
-            zoneManager.add(new Zone(0,18,0,14), Zone.Weight.MED);
-            zoneManager.add(new Zone(10,18,14,20), Zone.Weight.MED);
-            zoneManager.add(new Zone(10,18,20,27), Zone.Weight.MED);
+            zoneManager.add(new Zone(2,6,2,10), Zone.Weight.HOT);
+            zoneManager.add(new Zone(12,15,2,16), Zone.Weight.HOT);
+            zoneManager.add(new Zone(2,6,16,24), Zone.Weight.HOT);
+            zoneManager.add(new Zone(6.01,11.99,9,10), Zone.Weight.HOT); //hallway
+            zoneManager.add(new Zone(9,18,19,27), Zone.Weight.MED); //bathroom
 
+            zoneManager.add(new Zone(0,2,0,13), Zone.Weight.COLD);
+            zoneManager.add(new Zone(2,9,0,2), Zone.Weight.COLD);
+            zoneManager.add(new Zone(2,9,10,13), Zone.Weight.COLD);//c
+            zoneManager.add(new Zone(6,9,2,10), Zone.Weight.COLD);
+            zoneManager.add(new Zone(9,12,0,19), Zone.Weight.COLD);//e
+            zoneManager.add(new Zone(12,15,0,2), Zone.Weight.COLD);
+            zoneManager.add(new Zone(15,18,0,19), Zone.Weight.COLD);
+            zoneManager.add(new Zone(12,15,16,19), Zone.Weight.COLD);
+            zoneManager.add(new Zone(6,9,13,27), Zone.Weight.COLD);
+            zoneManager.add(new Zone(2,6,24,27), Zone.Weight.COLD);
+            zoneManager.add(new Zone(0,2,13,27), Zone.Weight.COLD);
+            zoneManager.add(new Zone(2,6,13,16), Zone.Weight.COLD);
         }
     }
 
@@ -152,55 +179,166 @@ public class AdvancedEvaluationRunner {
 
     @Test
     public void testBasic(){
-
-        Grid studioGrid = new StudioGrid(0.5);
+        Grid grid = new SimpleGrid(0.5);
         final Warble warble = new Warble(new Activity());
-        warble.setDevManager(new TestDevManager(studioGrid.getDevices()));
-        warble.initialize();
-        while(!warble.initialized()){}
+        TestDevManager testDevManager = new TestDevManager(grid.getDevices());
+        testDevManager.removeLocations();
+        warble.setDevManager(testDevManager);
+        warble.discover();
+        while(!warble.hasDiscovered()){}
 
 
-        SampleResult[][] evalResults = evaluateWarble(studioGrid, warble);
-        System.out.println(1 - ((double) errorCount / (double) evalCount));
-        printGrid(evalResults);
+//        SampleResult[][] evalResults = evaluateWarble(grid, warble);
+//        printCountSummaries();
+//
+//        //grid.overlayDevices(evalResults);
+//        //printGrid(evalResults);
+//
+//        Location[] trainLocs = grid.getProbLocs(20);
+//
+//        List<SampleResult> trainErrors = trainWarble(grid, warble, trainLocs, false);
+//        evalResults = evaluateWarble(grid, warble);
+//        printCountSummaries();
+//
+//        grid.overlayLocations(evalResults, trainLocs, new SampleResult("#"));
+//        grid.overlayDevices(evalResults);
+//
+//        printGrid(evalResults);
 
-        Location[] trainLocs = studioGrid.getProbLocs(100);
-        //Location[] trainLocs = studioGrid.getAllLocs();
-        System.out.println(trainLocs.length);
 
-        List<SampleResult> trainErrors = trainWarble(studioGrid, warble, trainLocs, false);
-        evalResults = evaluateWarble(studioGrid, warble);
-        System.out.println(1 - ((double) errorCount / (double) evalCount));
+        //SpatialReqOperator.DISTANCE_WEIGHT = 3000;
 
-        studioGrid.overlayLocations(evalResults, trainLocs, new SampleResult("#"));
-        studioGrid.overlayDevices(evalResults);
+        Results results = iterate(grid, warble, 192, 1000);
+        Statistics perCorrectDelta = results.getPerCorrectDelta();
+        Statistics correctDelta = results.getCorrectDelta();
+        Statistics errorDelta = results.getErrorDelta();
 
-        printGrid(evalResults);
+        ///System.out.println("--- % Correct Delta ---");
+        System.out.println(perCorrectDelta.mean());
+        System.out.println(perCorrectDelta.median());
+        System.out.println(perCorrectDelta.stdDev());
+        System.out.println(perCorrectDelta.min());
+        System.out.println(perCorrectDelta.max());
+
+        //System.out.println("--- Correct Delta ---");
+        System.out.println(correctDelta.mean());
+        System.out.println(correctDelta.median());
+        System.out.println(correctDelta.stdDev());
+        System.out.println(correctDelta.min());
+        System.out.println(correctDelta.max());
+
+        //System.out.println("--- Error Delta ---");
+        System.out.println(errorDelta.mean());
+        System.out.println(errorDelta.median());
+        System.out.println(errorDelta.stdDev());
+        System.out.println(errorDelta.min());
+        System.out.println(errorDelta.max());
     }
 
-    @Test
-    public void testIterate(){
-        Grid studioGrid = new StudioGrid(0.5);
-        Warble warble = new Warble(new Activity());
-        warble.setDevManager(new TestDevManager(studioGrid.getDevices()));
-        warble.initialize();
-        while(!warble.initialized()){}
+    public Results iterate(Grid grid, Warble warble, int numTraining, int iterations){
+        LocalActionDB.clear();
+        SampleResult[][] evalResults = evaluateWarble(grid, warble);
 
-        double totalImprovement = 0;
-        int i = 0;
-        SampleResult[][] evalResults = evaluateWarble(studioGrid, warble);
         double initialCorrect = 1 - ((double) errorCount / (double) evalCount);
-        for(i = 0; i < 10; i++){
+        System.out.println("initial % correct: " + initialCorrect);
+        System.out.println("initial correct count: " + (evalCount - errorCount));
+        //System.out.println("initial correct count: " + (evalCount - errorCount));
+        Results results = new Results(initialCorrect, errorCount, iterations);
+
+        for(int i = 0; i < iterations; i++){
             LocalActionDB.clear();
-            Location[] trainLocs = studioGrid.getProbLocs(50);
-            List<SampleResult> trainErrors = trainWarble(studioGrid, warble, trainLocs, false);
-            evalResults = evaluateWarble(studioGrid, warble);
+            Location[] trainLocs = grid.getProbLocs(numTraining);
+            List<SampleResult> trainErrors = trainWarble(grid, warble, trainLocs, false);
+            evalResults = evaluateWarble(grid, warble);
             double perCorrect = 1 - ((double) errorCount / (double) evalCount);
-            totalImprovement += (perCorrect - initialCorrect);
-            System.out.println(initialCorrect + " -> " + perCorrect);
+
+            results.addEntry(perCorrect, errorCount);
+            //System.out.println("error: " + errorCount);
+            //System.out.println("correct: " + (evalCount - errorCount));
+            //System.out.println(initialCorrect + " -> " + perCorrect);
+        }
+        return results;
+    }
+
+    private static class Results {
+        private double perOriginal;
+        private double errorOriginal;
+        private double totalSamples;
+
+        private double[] perCorrect;
+        private double[] error;
+        private double[] correct;
+        private int index = 0;
+
+        public Results(double perOriginal, double errorOriginal, int size){
+            this.perOriginal = perOriginal;
+            this.errorOriginal = errorOriginal;
+            this.totalSamples = size;
+
+            perCorrect = new double[size];
+            error = new double[size];
+            correct = new double[size];
         }
 
-        System.out.println(totalImprovement / i);
+        public void addEntry(double perCorrect, double error){
+            this.perCorrect[index] = perCorrect;
+            this.error[index] = error;
+            this.correct[index] = totalSamples - error;
+            index++;
+        }
+
+        private double[] getDelta(double[] results, double original){
+            double[] data = new double[results.length];
+            for(int i = 0; i < results.length; i++){
+                data[i] = results[i] - original;
+            }
+            return data;
+        }
+
+        public Statistics getPerCorrectDelta(){
+            return new Statistics(getDelta(perCorrect, perOriginal));
+        }
+
+        public Statistics getCorrectDelta(){
+            return new Statistics(getDelta(correct, totalSamples - errorOriginal));
+        }
+
+        public Statistics getErrorDelta(){
+            return new Statistics(getDelta(error, errorOriginal));
+        }
+    }
+
+    private void printCountSummaries(){
+        System.out.println("percent correct: " + (1 - ((double) errorCount / (double) evalCount)));
+        System.out.println("number correct: " + (evalCount - errorCount));
+        System.out.println("number incorrect: " + errorCount);
+        System.out.println("number total: " + evalCount);
+    }
+
+//    @Test
+//    public void testSetup(){
+//        Grid.HOT_WEIGHT = .34;
+//        Grid.MED_WEIGHT = .16;
+//        Grid.COLD_WEIGHT = .5;
+//        SpatialReqOperator.DistToHistoryRatio = 14;
+//        double improvement = iterate(160);
+//    }
+
+    @Test
+    public void testGoldStandard(){
+        Grid grid = new StudioGrid(0.5);
+        Warble warble = new Warble(new Activity());
+        warble.setDevManager(new TestDevManager(grid.getDevices()));
+        warble.discover();
+        while(!warble.hasDiscovered()){}
+
+        grid.mockTrainAllLocs();
+
+        SampleResult[][] evalResults = evaluateWarble(grid, warble);
+        printCountSummaries();
+
+        grid.overlayDevices(evalResults);
+        printGrid(evalResults);
     }
 
     private List<SampleResult> trainWarble(Grid grid, final Warble warble, Location[] trainLocs, boolean repeat){
@@ -237,7 +375,7 @@ public class AdvancedEvaluationRunner {
             @Override
             public SampleResult act(double x, double y) {
                 SpatialReq spatialReq = new SpatialReq(SpatialReq.Bound.CLOSEST,
-                        SpatialReq.Influence.AWARE, new Location(x,y));
+                        SpatialReq.Influence.AWARE, new Location(x, y));
                 List<DeviceReq> reqs = new ArrayList<>();
                 reqs.add(spatialReq);
                 List<Light> lights = warble.retrieve(Light.class, reqs, 1);
@@ -252,8 +390,8 @@ public class AdvancedEvaluationRunner {
             }
 
             @Override
-            public SampleResult onError(SampleResult expected, SampleResult actual){
-                if(expected.isEmpty()){
+            public SampleResult onError(SampleResult expected, SampleResult actual) {
+                if (expected.isEmpty()) {
                     return new SampleResult();
                 } else {
                     errorCount++;
@@ -262,26 +400,47 @@ public class AdvancedEvaluationRunner {
             }
 
             @Override
-            public SampleResult onSuccess(SampleResult actual){
+            public SampleResult onSuccess(SampleResult actual) {
                 return new SampleResult("Y");
             }
         });
         return evalResults;
     }
 
+    @Test
+    public void testGenerateProbHeatmap(){
+        Grid grid = new StudioGrid(1);
+        SampleResult[][] heatmapRes = grid.getZoneHeatmap(false);
+        HeatChart map = new HeatChart(SampleResult.toDoubleArr(heatmapRes));
 
+
+        // Step 2: Customise the chart.
+        map.setTitle("Studio");
+        map.setXAxisLabel("Distance (ft.)");
+        map.setYAxisLabel("Distance (ft.)");
+        map.setXAxisValuesFrequency(2);
+        map.setYAxisValuesFrequency(2);
+
+
+        // Step 3: Output the chart to a file.
+        try {
+            map.saveToFile(new File("java-heat-chart.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     @Test
     public void testTrainingGeneration(){
-        Grid studioGrid = new StudioGrid(1);
+        Grid grid = new OneBedroomGrid(1);
         final Warble warble = new Warble(new Activity());
-        warble.setDevManager(new TestDevManager(studioGrid.getDevices()));
-        warble.initialize();
-        while(!warble.initialized()){}
+        warble.setDevManager(new TestDevManager(grid.getDevices()));
+        warble.discover();
+        while(!warble.hasDiscovered()){}
 
-        Location[] trainLocs = studioGrid.getProbLocs(25);
+        Location[] trainLocs = grid.getProbLocs(25);
 
-        SampleResult[][] evalResults = studioGrid.evaluate(new EvaluationAction() {
+        SampleResult[][] evalResults = grid.evaluate(new EvaluationAction() {
             @Override
             public SampleResult act(double x, double y) {
                 return new SampleResult("");
@@ -302,17 +461,17 @@ public class AdvancedEvaluationRunner {
             }
         });
 
-        studioGrid.overlayDevices(evalResults);
-        studioGrid.overlayLocations(evalResults, trainLocs, new SampleResult("#"));
+        grid.overlayDevices(evalResults);
+        grid.overlayLocations(evalResults, trainLocs, new SampleResult("#"));
         printGrid(evalResults);
 
-        SampleResult[][] heatmapRes = studioGrid.getZoneHeatmap();
+        SampleResult[][] heatmapRes = grid.getZoneHeatmap(false);
         HeatChart map = new HeatChart(SampleResult.toDoubleArr(heatmapRes));
 
         // Step 2: Customise the chart.
         map.setTitle("Saweeet");
-        map.setXAxisLabel("X Axis");
-        map.setYAxisLabel("Y Axis");
+        map.setXAxisLabel("Distance (ft.)");
+        map.setYAxisLabel("Distance (ft.)");
 
 
         // Step 3: Output the chart to a file.
@@ -322,4 +481,32 @@ public class AdvancedEvaluationRunner {
             e.printStackTrace();
         }
     }
+
+//    @Test
+//    public void testFindBestParams(){
+//
+//        for(int i = 0; i < 5; i++){
+//            System.out.println("------- Beginning test ------");
+//            setupParams(i);
+//            System.out.println("-- HOT: " + Grid.HOT_WEIGHT);
+//            System.out.println("-- MED: " + Grid.MED_WEIGHT);
+//            System.out.println("-- COLD: " + Grid.COLD_WEIGHT);
+//            double best = 0;
+//            double improved;
+//            int bestRatio = -1;
+//            for(int j = 1; j < 25; j++){
+//                System.out.println("DistToHistoryRatio >> " + j);
+//                SpatialReqOperator.DistToHistoryRatio = j;
+//                improved = iterate(80);
+//                if(improved > best){
+//                    best = improved;
+//                    bestRatio = j;
+//                }
+//            }
+//            System.out.println("The best ratio with these params is: " + bestRatio + ". Improved by" + best);
+//            System.out.println("--------  End of test -------");
+//        }
+//    }
+
+
 }

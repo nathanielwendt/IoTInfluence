@@ -1,5 +1,6 @@
 package nathanielwendt.mpc.ut.edu.iotinfluence.device;
 
+import nathanielwendt.mpc.ut.edu.iotinfluence.db.ActionType;
 import nathanielwendt.mpc.ut.edu.iotinfluence.db.LocalActionDB;
 
 /**
@@ -8,18 +9,42 @@ import nathanielwendt.mpc.ut.edu.iotinfluence.db.LocalActionDB;
 public abstract class Light extends Device {
     public static String identifier = "Light";
 
-    public enum ActionTypes {
-        BRIGHTNESS("brightness"),
-        OFF("off"),
-        ON("on");
+    public enum LightAction implements ActionType {
+        BRIGHTNESS("brightness"){
+            @Override public void undo() throws DeviceUnavailableException {
+                this.light.brightness(this.prevBrightness);
+            }
+        },
+        OFF("off") {
+            @Override public void undo() throws DeviceUnavailableException {
+                this.light.on();
+            }
+        },
+        ON("on") {
+            @Override public void undo() throws DeviceUnavailableException {
+                this.light.off();
+            }
+        };
 
-        private final String val;
-        ActionTypes(String val){
+        protected final String val;
+        protected Light light;
+        protected int prevBrightness;
+        protected int nextBrightness;
+        LightAction(String val){
             this.val = val;
         }
 
         public String val(){
             return this.val;
+        }
+
+        public void setObj(Light light){
+            this.light = light;
+        }
+
+        public void setBrightness(int prevBrightness, int nextBrightness){
+            this.prevBrightness = prevBrightness;
+            this.nextBrightness = nextBrightness;
         }
     }
 
@@ -27,13 +52,30 @@ public abstract class Light extends Device {
         super(deviceId, requestId);
     }
 
+    //included to allow extending class to provide brightness details so the undo action can set to previous value
+    protected void brightness(int prevLevel, int nextLevel){
+        LightAction lightAction = LightAction.BRIGHTNESS;
+        lightAction.setBrightness(prevLevel, nextLevel);
+        lightAction.setObj(this);
+        LocalActionDB.completePending(this.requestId(), this.deviceId(), lightAction);
+    }
+
     public void brightness(int level) throws DeviceUnavailableException {
-        LocalActionDB.completePending(this.requestId(), this.deviceId(), ActionTypes.BRIGHTNESS.val());
+        LightAction lightAction = LightAction.BRIGHTNESS;
+        lightAction.setBrightness(0, level);
+        lightAction.setObj(this);
+        LocalActionDB.completePending(this.requestId(), this.deviceId(), lightAction);
     }
+
     public void off() throws DeviceUnavailableException {
-        LocalActionDB.completePending(this.requestId(), this.deviceId(), ActionTypes.OFF.val());
+        LightAction lightAction = LightAction.OFF;
+        lightAction.setObj(this);
+        LocalActionDB.completePending(this.requestId(), this.deviceId(), lightAction);
     }
+
     public void on() throws DeviceUnavailableException {
-        LocalActionDB.completePending(this.requestId(), this.deviceId(), ActionTypes.ON.val());
+        LightAction lightAction = LightAction.ON;
+        lightAction.setObj(this);
+        LocalActionDB.completePending(this.requestId(), this.deviceId(), lightAction);
     }
 }

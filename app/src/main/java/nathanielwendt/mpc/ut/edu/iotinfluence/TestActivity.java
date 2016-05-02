@@ -77,7 +77,7 @@ public class TestActivity extends Activity {
         //reqs.add(new TypeReq(new TypeReq.Type[]{TypeReq.Type.LIGHT}));
 
         snapshot = new Warble(this);
-        while(!snapshot.initialized()){}
+        while(!snapshot.hasDiscovered()){}
         Light light = snapshot.retrieve(Light.class, reqs);
         try {
             light.on();
@@ -108,13 +108,13 @@ public class TestActivity extends Activity {
 
         snapshot = new Warble(this);
 
-        //background initialization, polling at use to wait until initialized
-        snapshot.initialize();
-        while(!snapshot.initialized()){}
+        //background initialization, polling at use to wait until hasDiscovered
+        snapshot.discover();
+        while(!snapshot.hasDiscovered()){}
         act();
 
         //initialization with callback
-//        snapshot.initialize(new InitializedCallback(){
+//        snapshot.discover(new InitializedCallback(){
 //           @Override public void onInit(){
 //               act();
 //           }
@@ -142,7 +142,7 @@ public class TestActivity extends Activity {
 
         @Override
         protected Void doInBackground(Void... params) {
-            while(!snapshot.initialized()) {
+            while(!snapshot.hasDiscovered()) {
             }
 
             //STATIC BIND

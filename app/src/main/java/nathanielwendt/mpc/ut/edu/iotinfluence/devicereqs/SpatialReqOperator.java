@@ -13,10 +13,12 @@ import nathanielwendt.mpc.ut.edu.iotinfluence.models.DeviceModel;
  * Created by nathanielwendt on 3/23/16.
  */
 public class SpatialReqOperator extends AggregateReqOperator {
-    public static double DistToHistoryRatio = 9.5;
+    public static double DistToHistoryRatio = 100; //9.5
+    public static double DISTANCE_WEIGHT = 1000;
 
+    private final static double SAMPLE_TOLERANCE = 0.01;
 
-    private final static double INFLUENCE = 15;
+    public final static double INFLUENCE = 30;
     private final static double REF_THRESH = 50;
     private final static double REF_WEIGHT = 1;  //2
     private final static double DEV_THRESH = 50;
@@ -35,6 +37,11 @@ public class SpatialReqOperator extends AggregateReqOperator {
         List<Action> actions;
         List<RelevancePoint> relPoints = new ArrayList<RelevancePoint>();
         double knowledge;
+
+        if(LocalActionDB.size() > 10){
+            DistToHistoryRatio = DISTANCE_WEIGHT / (LocalActionDB.size());
+        }
+
         for(DeviceModel candidate : candidates) {
             knowledge = 0.0;
             int posCount = 0;
@@ -53,27 +60,48 @@ public class SpatialReqOperator extends AggregateReqOperator {
                 }
 
                 for (Action action : actions) {
+
+                    //only consider actions for the candidate device
+                    //this speeds up the processing and shouldn't affect the outcome too much except
+                    //for complex situations where several devices are near eachother and they can learn from eachother
+                    //Note: if you comment this out, must also add the DEV contribution below
+                    if(!action.deviceId.equals(candidate.id)){
+                        continue;
+                    }
                     if (action.devLocation != null) {
                         double refDist = Location.distance(action.refLocation, this.req.requesterLoc, .25);
                         double devDist = Location.distance(action.devLocation, candidate.location(), .25);
 
                         if(action.successful){
-                            double refValue = REF_THRESH - refDist; //0 - 50
-                            double devValue = DEV_THRESH - devDist; //0 - 50
-                            double adjRefValue = refValue * REF_WEIGHT; //0 - 50
-                            double adjDevValue = refValue * DEV_WEIGHT; //0 - 10
-                            posKnowledge += ((REF_WEIGHT * (REF_THRESH - refDist)) *
-                                    (DEV_WEIGHT * (DEV_THRESH - devDist)));  //0 - 500
+                            //if reference point matches a previous successful query, make this device
+                            //have the highest knowledge to be sorted first (essentially just selecting this candidate device)
+                            if(refDist <= SAMPLE_TOLERANCE && action.deviceId.equals(candidate.id)){
+                                posKnowledge = Double.MAX_VALUE;
+                                posCount = 1;
+                                break;
+                            }
+                            //double refValue = REF_THRESH - refDist; //0 - 50
+                            //double devValue = DEV_THRESH - devDist; //0 - 50
+                            //double adjRefValue = refValue * REF_WEIGHT; //0 - 50
+                            //double adjDevValue = refValue * DEV_WEIGHT; //0 - 10
+                            posKnowledge += ((REF_WEIGHT * (REF_THRESH - refDist)));
+                                    //(DEV_WEIGHT * (DEV_THRESH - devDist)));  //0 - 500
                             posCount++;
                         } else {
-                            negKnowledge += ((REF_WEIGHT * (REF_THRESH - refDist)) *
-                                    (DEV_WEIGHT * (DEV_THRESH - devDist)));
+                            negKnowledge += ((REF_WEIGHT * (REF_THRESH - refDist)));
+                                    //(DEV_WEIGHT * (DEV_THRESH - devDist)));
                             negCount++;
                         }
 
                     } else {
-                        //TODO- not adapted for new algorithm!!!
-                        throw new RuntimeException("Not implemented yet");
+                        double refDist = Location.distance(action.refLocation, this.req.requesterLoc, .25);
+                        if(action.successful){
+                            posKnowledge += ((REF_WEIGHT * (REF_THRESH - refDist)));
+                            posCount++;
+                        } else {
+                            negKnowledge += ((REF_WEIGHT * (REF_THRESH - refDist)));
+                            negCount++;
+                        }
 //                        double refDist = Location.distance(action.refLocation, this.req.requesterLoc);
 //                        double sign = (action.successful) ? 1 : -1;
 //                        knowledge += sign * ((REF_WEIGHT * (REF_THRESH - refDist)));
@@ -82,11 +110,11 @@ public class SpatialReqOperator extends AggregateReqOperator {
 
                 //knowledge = posKnowledge - negKnowledge;
                 if (posCount != 0) {
-                    knowledge += posKnowledge / (posCount);
+                    knowledge += posKnowledge / ((double) posCount);
                 }
 
                 if (negCount != 0) {
-                    knowledge -= negKnowledge / (negCount) ;
+                    knowledge -=  negKnowledge / ((double) negCount) ;
                 }
             }
 

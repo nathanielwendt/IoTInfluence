@@ -21,6 +21,14 @@ public class LocalActionDB {
         actions.put(requestId + deviceId, action);
     }
 
+    public static Action getAction(String requestId, String deviceId){
+        return actions.get(requestId + deviceId);
+    }
+
+    public static int size(){
+        return actions.size();
+    }
+
     public static void insertPending(String requestId, Location refLoc){
         PendingAction pendingAction = new PendingAction(requestId, refLoc);
         pending.put(requestId, pendingAction);
@@ -35,15 +43,18 @@ public class LocalActionDB {
     }
 
     //always marked as successful, a help! command will overwrite the entry to be unsuccessful
-    public static void completePending(String requestId, String deviceId, String actionType){
+    public static void completePending(String requestId, String deviceId, ActionType actionType){
         PendingAction pendingAction = pending.get(requestId);
         if(pendingAction == null){
-            throw new RuntimeException("cannot populate empty pending request");
+            //TODO: log that client is trying to populate empty pending request
+            //This is no longer an exception because undo actions will call completePending on nonexistent pending records
+            return;
         }
         Action action = Action.newDefault(deviceId, pendingAction.getRefLoc(),
                         pendingAction.getDevLoc(deviceId), true);
         action.type = actionType;
         LocalActionDB.insert(requestId, deviceId, action);
+        pending.remove(requestId);
     }
 
     public static void update(String requestId, String deviceId, boolean successful){

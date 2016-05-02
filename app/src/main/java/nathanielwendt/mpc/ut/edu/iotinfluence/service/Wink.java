@@ -177,6 +177,9 @@ public class Wink implements Service {
         return new Light(deviceId, requestId){
             @Override
             public void brightness(int level) throws DeviceUnavailableException {
+                //TODO: support resetting previous brightness
+                //query for previous brightness
+                //super.brightness(prevLevel, nextLevel);
                 super.brightness(level);
                 WinkRequest req = new WinkRequest(true);
                 req.param("light_bulb_id", deviceId);

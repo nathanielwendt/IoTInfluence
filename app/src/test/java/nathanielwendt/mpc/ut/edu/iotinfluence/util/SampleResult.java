@@ -32,11 +32,13 @@ public class SampleResult {
         return Double.valueOf(ids.get(0));
     }
 
-    public String getSingleResult(){
-        return ids.get(0);
+    public String getSingleResult() {
+        if (ids.size() == 0) {
+            return "";
+        } else {
+            return ids.get(0);
+        }
     }
-
-
 
     @Override public String toString(){
         String res = "";
@@ -51,13 +53,15 @@ public class SampleResult {
     public static double[][] toDoubleArr(SampleResult[][] data){
         if(data.length == 0){ return new double[0][0]; }
 
-        double[][] res = new double[data.length][data[0].length];
-
-        for(int x = 0; x < data.length; x++){
-            for(int y = 0; y < data[0].length; y++){
+        double[][] res = new double[data.length+1][data[0].length+1];
+        int x = 0;
+        int y = 0;
+        for(x = 0; x < data.length; x++){
+            for(y = 0; y < data[0].length; y++){
                 res[x][y] = data[x][y].toDouble();
             }
         }
+        res[x][y] = 0.0;
         return res;
     }
 

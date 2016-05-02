@@ -92,8 +92,8 @@ public class EvaluationRunner {
 
         warble = new Warble(new Activity());
         warble.setDevManager(new TestDevManager(lights));
-        warble.initialize();
-        while(!warble.initialized()){}
+        warble.discover();
+        while(!warble.hasDiscovered()){}
 
         String[] resultsWarble = evaluateWarble(grid, DEF_GRID_SAMPLES);
         Grid.SampleResult[] resultsGroundTruth = evaluateGroundTruth(grid, DEF_GRID_SAMPLES);

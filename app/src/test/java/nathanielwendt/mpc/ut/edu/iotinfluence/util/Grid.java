@@ -7,6 +7,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import nathanielwendt.mpc.ut.edu.iotinfluence.db.Action;
+import nathanielwendt.mpc.ut.edu.iotinfluence.db.LocalActionDB;
+import nathanielwendt.mpc.ut.edu.iotinfluence.device.Light;
 import nathanielwendt.mpc.ut.edu.iotinfluence.misc.Location;
 import nathanielwendt.mpc.ut.edu.iotinfluence.models.DeviceModel;
 
@@ -20,6 +23,10 @@ public abstract class Grid {
     protected double width;
     protected double height;
     protected double step;
+
+    public static double HOT_WEIGHT = .65;
+    public static double MED_WEIGHT = .22;
+    public static double COLD_WEIGHT = .18;
 
 
     public static class ZoneManager {
@@ -74,11 +81,12 @@ public abstract class Grid {
             }
             for(Zone.Weight weight : Zone.Weight.values()){
                 double area = getAreaOfWeight(weight);
-                double adjustedProb = (area / totalArea) * weight.prob;
+                //double adjustedProb = (area / totalArea) * weight.prob;
+                double adjustedProb = (weight.prob) / area;
                 adjustedProbs.put(weight, adjustedProb);
-                System.out.println(weight.getProb() + " --> " + adjustedProb);
+                //System.out.println(weight.getProb() + " --> " + adjustedProb);
             }
-            System.out.println("-----------");
+            //System.out.println("-----------");
         }
 
         private Map<Zone.Weight, Double> adjustedProbs = new HashMap<>();
@@ -121,7 +129,7 @@ public abstract class Grid {
 
 
         public enum Weight {
-            HOT(.5), MED(.3), COLD(.2);
+            HOT(Grid.HOT_WEIGHT), MED(Grid.MED_WEIGHT), COLD(Grid.COLD_WEIGHT);
 
             private double prob;
             Weight(double prob){
@@ -142,19 +150,30 @@ public abstract class Grid {
         this.step = step;
     }
 
-    public SampleResult[][] getZoneHeatmap(){
+    public SampleResult[][] getZoneHeatmap(boolean rotate){
         int xDim = getResultSize(width, step);
         int yDim = getResultSize(height, step);
 
-        SampleResult[][] res = new SampleResult[xDim][yDim];
+        SampleResult[][] res;
+        if(rotate){
+            res = new SampleResult[yDim][xDim];
+        } else {
+            res = new SampleResult[xDim][yDim];
+        }
 
         int xCount = 0;
         int yCount = 0;
-        for(double y = 0; y < height; y+=step){
+        for(double y = height - step; y >= 0; y-=step){
             for(double x = 0; x < width; x+=step){
                 double adjProb = zoneManager.getAdjustedProbAtLoc(new Location(x, y));
                 SampleResult result = new SampleResult(String.valueOf(adjProb));
-                res[xCount][yCount] = result;
+
+                if(rotate){
+                    res[yCount][xCount] = result;
+                } else {
+                    res[xCount][yCount] = result;
+                }
+
                 xCount++;
             }
             xCount = 0;
@@ -245,12 +264,40 @@ public abstract class Grid {
         int yDim = getResultSize(height, step);
 
         Location[] res = new Location[xDim * yDim];
-        for(int x = 0; x < xDim; x++){
-            for(int y = 0; y < yDim; y++){
-                res[(x * yDim) + y] = new Location(x,y);
+        int count = 0;
+        for(double x = 0; x < width; x+=step){
+            for(double y = 0; y < height; y+=step){
+                res[count++] = new Location(x,y);
             }
         }
+
+//        for(int x = 0; x < xDim; x+=step){
+//            for(int y = 0; y < yDim; y+=step){
+//                res[(x * yDim) + y] = new Location(x,y);
+//            }
+//        }
         return res;
+    }
+
+    public void mockTrainAllLocs(){
+        Location[] locations = getAllLocs();
+        int count = 0;
+        for(Location location: locations){
+            SampleResult expectedResult = actGroundTruth(location.x(), location.y());
+            String deviceId = expectedResult.getSingleResult();
+            Location devLocation = null;
+            for(DeviceModel device : devices){
+                if(device.id.equals(deviceId)){
+                    devLocation = device.location;
+                }
+            }
+
+            if(deviceId.equals("")){ continue; }
+            Action action = Action.newDefault(deviceId, location,
+                    devLocation, true);
+            action.type = Light.LightAction.ON;
+            LocalActionDB.insert(String.valueOf(count++), deviceId, action);
+        }
     }
 
     public List<SampleResult> train(Location[] locations, boolean retry, TrainingAction trainAction){

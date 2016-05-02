@@ -14,7 +14,7 @@ public class Action {
     public Location devLocation;
     public List<DeviceReq> reqs;
     public String deviceId;
-    public String type; //e.q. Light-On, Key-Unlock, Video-Pan
+    public ActionType type; //e.q. Light-On, Key-Unlock, Video-Pan
     public boolean successful;
 
     public static Action newDefault(String deviceId, Location ref, Location dev, boolean succ){
