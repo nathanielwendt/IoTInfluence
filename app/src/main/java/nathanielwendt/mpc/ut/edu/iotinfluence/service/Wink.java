@@ -63,7 +63,7 @@ public class Wink implements Service {
         void signedIn();
     }
 
-    private void signIn(final SignInCallback callback){
+    public void signIn(final SignInCallback callback){
         WinkRequest req = new WinkRequest(false);
         req.param("client_id", clientId);
         req.param("client_secret", clientSecret);

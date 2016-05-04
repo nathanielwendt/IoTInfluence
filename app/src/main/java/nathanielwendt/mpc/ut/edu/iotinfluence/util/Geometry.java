@@ -55,6 +55,28 @@ public class Geometry {
             return result;
         }
 
+        public Point[] getPointsOnSegment() {
+            if(first.x == second.x){
+                double diff = second.y - first.y;
+                Point[] ret = new Point[(int) diff + 1];
+                int count = 0;
+                for(double y = first.y; y <= second.y; y++){
+                    ret[count++] = new Point(first.x,y);
+                }
+                return ret;
+            } else if(first.y == second.y) {
+                double diff = second.x - first.x;
+                Point[] ret = new Point[(int) diff + 1];
+                int count = 0;
+                for(double x = first.x; x <= second.x; x++){
+                    ret[count++] = new Point(x,first.y);
+                }
+                return ret;
+            } else {
+                throw new RuntimeException("Horizontal or Vertical lines only supported for getPointsonSegment");
+            }
+        }
+
         @Override
         public String toString() {
             if (name.equals("LineSegment")) {

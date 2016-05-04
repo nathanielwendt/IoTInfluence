@@ -69,7 +69,7 @@ public class LocalDeviceManager implements DeviceManager {
 
     @Override
     public void scan(final InitializedCallback callback){
-        //throw new RuntimeException("Not completed yet");
+        //ToDo: perform cloud update scans as well
 
         serviceManager.scan(new ServiceManager.FindServiceCallback(){
             @Override public void onService(Service service){

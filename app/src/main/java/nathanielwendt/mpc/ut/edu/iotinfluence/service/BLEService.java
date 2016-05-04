@@ -33,7 +33,7 @@ public class BLEService implements Service {
         this.deviceId = deviceId;
     }
 
-    private class BLEHandler {
+    public class BLEHandler {
 
         private static final int ADVERTISE_DUR = 3000;
         Handler mHandler;
@@ -82,6 +82,26 @@ public class BLEService implements Service {
                 @Override
                 public void run() {
                     advertiser.stopAdvertising(advertisingCallback);
+                }
+            }, duration);
+        }
+
+
+        //included for evaluation, remove for final product
+        public void advertise(String value, int duration, final AdvertiseCallback callback){
+            ParcelUuid pUuid = new ParcelUuid( UUID.fromString(BLE_UUID) );
+            data = new AdvertiseData.Builder()
+                    .setIncludeDeviceName(false)
+                    .addServiceUuid(pUuid)
+                    .addServiceData(pUuid, value.getBytes(Charset.forName("UTF-8")))
+                    .build();
+
+            advertiser.startAdvertising(settings, data, advertisingCallback);
+            mHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    advertiser.stopAdvertising(advertisingCallback);
+                    callback.onStartFailure(1);
                 }
             }, duration);
         }

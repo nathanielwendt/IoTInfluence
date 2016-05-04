@@ -29,6 +29,14 @@ public class SampleResult {
     }
 
     public double toDouble(){
+        String val = ids.get(0);
+        if(val.charAt(0) == '['){
+            return .02;
+        }
+
+        if(val.charAt(0) == '*'){
+            return 0;
+        }
         return Double.valueOf(ids.get(0));
     }
 
@@ -57,11 +65,11 @@ public class SampleResult {
         int x = 0;
         int y = 0;
         for(x = 0; x < data.length; x++){
-            for(y = 0; y < data[0].length; y++){
+            for(y = data[0].length - 1; y >= 0; y--){
                 res[x][y] = data[x][y].toDouble();
             }
         }
-        res[x][y] = 0.0;
+//        res[x][y] = 0.0;
         return res;
     }
 

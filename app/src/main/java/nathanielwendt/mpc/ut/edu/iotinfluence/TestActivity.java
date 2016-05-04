@@ -1,18 +1,22 @@
 package nathanielwendt.mpc.ut.edu.iotinfluence;
 
 import android.app.Activity;
+import android.bluetooth.le.AdvertiseCallback;
+import android.bluetooth.le.AdvertiseSettings;
 import android.os.AsyncTask;
 import android.os.Bundle;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.DeviceUnavailableException;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.Light;
 import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.DeviceReq;
-import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.SpatialReq;
 import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.TypeReq;
-import nathanielwendt.mpc.ut.edu.iotinfluence.misc.Location;
+import nathanielwendt.mpc.ut.edu.iotinfluence.models.DeviceModel;
+import nathanielwendt.mpc.ut.edu.iotinfluence.service.BLEService;
+import nathanielwendt.mpc.ut.edu.iotinfluence.service.Service;
+import nathanielwendt.mpc.ut.edu.iotinfluence.service.ServiceManager;
+import nathanielwendt.mpc.ut.edu.iotinfluence.service.Wink;
 
 /**
  * Created by nathanielwendt on 3/28/16.
@@ -21,10 +25,86 @@ public class TestActivity extends Activity {
     Warble snapshot;
     List<DeviceReq> reqs;
 
+    Wink wink;
+
+    public void evalBLEScan(){
+
+        //begin profiling
+        ServiceManager serviceManager = new ServiceManager(this);
+        serviceManager.scan(new ServiceManager.FindServiceCallback() {
+            @Override
+            public void onService(Service service) {
+
+            }
+
+            @Override
+            public void done() {
+                //end profiling
+            }
+        });
+    }
+
+    public void evalCloudScan(){
+
+        wink = new Wink("10db23b44fb025f1ad302d66693feb11",
+                "649bf40892d9caea9ee6f70a0026f434",
+                "mobilepervasivecomputing@gmail.com",
+                "mpcmpc4IoT");
+
+        wink.signIn(new Wink.SignInCallback() {
+            @Override
+            public void signedIn() {
+                //begin profiling
+                wink.fetchDevices(new Service.FetchDevicesCallback() {
+                    @Override
+                    public void onFetch(List<DeviceModel> fetchedDevices) {
+                        //end profiling
+                    }
+                });
+            }
+        });
+    }
+
+    public void evalCloudAction(){
+        wink = new Wink("10db23b44fb025f1ad302d66693feb11",
+                "649bf40892d9caea9ee6f70a0026f434",
+                "mobilepervasivecomputing@gmail.com",
+                "mpcmpc4IoT");
+
+        //begin profiling
+        wink.signIn(new Wink.SignInCallback() {
+            @Override
+            public void signedIn() {
+                //end profiling
+            }
+        });
+    }
+
+    public void evalBLEAction(){
+        BLEService bleService = new BLEService("bleh", TypeReq.Type.LIGHT);
+        BLEService.BLEHandler bleHandler = bleService.new BLEHandler();
+
+        //start profiling
+        bleHandler.advertise("light-on", 3, new AdvertiseCallback() {
+            @Override
+            public void onStartSuccess(AdvertiseSettings settingsInEffect) {
+
+            }
+
+            @Override
+            public void onStartFailure(int errorCode) {
+                //end profiling
+            }
+        });
+    }
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+
 
 //        final Wink wink = new Wink("10db23b44fb025f1ad302d66693feb11",
 //                "649bf40892d9caea9ee6f70a0026f434",
@@ -71,20 +151,20 @@ public class TestActivity extends Activity {
 
 
         //Warble
-        reqs = new ArrayList<DeviceReq>();
-        reqs.add(new SpatialReq(SpatialReq.Bound.CLOSEST, SpatialReq.Influence.AWARE,
-                new Location(0,0)));
-        //reqs.add(new TypeReq(new TypeReq.Type[]{TypeReq.Type.LIGHT}));
-
-        snapshot = new Warble(this);
-        while(!snapshot.hasDiscovered()){}
-        Light light = snapshot.retrieve(Light.class, reqs);
-        try {
-            light.on();
-        } catch (DeviceUnavailableException e) {
-            e.printStackTrace();
-        }
-
+//        reqs = new ArrayList<DeviceReq>();
+//        reqs.add(new SpatialReq(SpatialReq.Bound.CLOSEST, SpatialReq.Influence.AWARE,
+//                new Location(0,0)));
+//        //reqs.add(new TypeReq(new TypeReq.Type[]{TypeReq.Type.LIGHT}));
+//
+//        snapshot = new Warble(this);
+//        while(!snapshot.hasDiscovered()){}
+//        Light light = snapshot.retrieve(Light.class, reqs);
+//        try {
+//            light.on();
+//        } catch (DeviceUnavailableException e) {
+//            e.printStackTrace();
+//        }
+//
 
         //Abstraction ---------------
         //1) Sign in to wink with RAw HTTP
@@ -93,25 +173,22 @@ public class TestActivity extends Activity {
         //4) Turn device on
 
 
-
-
-
         //-----------------
 
-
-        reqs = new ArrayList<DeviceReq>();
-        reqs.add(new SpatialReq(SpatialReq.Bound.CLOSEST, SpatialReq.Influence.AWARE,
-                                new Location(0,0)));
-        //no effect for static binding since type token is passed into methods
-        //only can effect static binding if type given here is different from type token (will return nothing)
-        reqs.add(new TypeReq(new TypeReq.Type[]{TypeReq.Type.LIGHT}));
-
-        snapshot = new Warble(this);
-
-        //background initialization, polling at use to wait until hasDiscovered
-        snapshot.discover();
-        while(!snapshot.hasDiscovered()){}
-        act();
+//
+//        reqs = new ArrayList<DeviceReq>();
+//        reqs.add(new SpatialReq(SpatialReq.Bound.CLOSEST, SpatialReq.Influence.AWARE,
+//                                new Location(0,0)));
+//        //no effect for static binding since type token is passed into methods
+//        //only can effect static binding if type given here is different from type token (will return nothing)
+//        reqs.add(new TypeReq(new TypeReq.Type[]{TypeReq.Type.LIGHT}));
+//
+//        snapshot = new Warble(this);
+//
+//        //background initialization, polling at use to wait until hasDiscovered
+//        snapshot.discover();
+//        while(!snapshot.hasDiscovered()){}
+//        act();
 
         //initialization with callback
 //        snapshot.discover(new InitializedCallback(){

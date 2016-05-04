@@ -31,6 +31,7 @@ public abstract class Grid {
 
     public static class ZoneManager {
         private Map<Zone.Weight, List<Zone>> zones = new HashMap<>();
+        private Map<Zone.Weight, Double> adjustedProbs = new HashMap<>();
 
         public ZoneManager(){}
 
@@ -74,6 +75,16 @@ public abstract class Grid {
             return null;
         }
 
+        public double[] getZoneAdjustedProbs(){
+            double[] ret = new double[Zone.Weight.values().length];
+            int i = 0;
+            for(Zone.Weight weight : Zone.Weight.values()){
+                System.out.println(weight);
+                ret[i++] = adjustedProbs.get(weight);
+            }
+            return ret;
+        }
+
         private void computeAdjustedProbs(){
             double totalArea = 0;
             for(Zone.Weight weight : Zone.Weight.values()){
@@ -88,8 +99,6 @@ public abstract class Grid {
             }
             //System.out.println("-----------");
         }
-
-        private Map<Zone.Weight, Double> adjustedProbs = new HashMap<>();
 
         public double getAdjustedProbAtLoc(Location loc){
             Zone.Weight weight = getWeightAtLoc(loc);
@@ -150,6 +159,10 @@ public abstract class Grid {
         this.step = step;
     }
 
+    public double[] getZoneAdjustedWeights(){
+        return zoneManager.getZoneAdjustedProbs();
+    }
+
     public SampleResult[][] getZoneHeatmap(boolean rotate){
         int xDim = getResultSize(width, step);
         int yDim = getResultSize(height, step);
@@ -163,7 +176,8 @@ public abstract class Grid {
 
         int xCount = 0;
         int yCount = 0;
-        for(double y = height - step; y >= 0; y-=step){
+        //for(double y = height - step; y >= 0; y-=step){
+        for(double y = 0; y < height; y+=step){
             for(double x = 0; x < width; x+=step){
                 double adjProb = zoneManager.getAdjustedProbAtLoc(new Location(x, y));
                 SampleResult result = new SampleResult(String.valueOf(adjProb));
@@ -329,10 +343,13 @@ public abstract class Grid {
         return (int) result;
     }
 
+    public static final String DEVICE_DELIM = "[";
+
     public void overlayDevices(SampleResult[][] results){
         for(DeviceModel dev: devices){
             int x = (int) (dev.location().x() / step);
             int y = (int) (dev.location().y() / step);
+            System.out.println(x + " , " + y);
             results[x][y] = new SampleResult("[" + dev.id + "]");
         }
     }
@@ -340,6 +357,22 @@ public abstract class Grid {
     public void overlayLocations(SampleResult[][] results, Location[] locs, SampleResult marker){
         for(Location loc : locs){
             results[(int) loc.x()][(int) loc.y()] = marker;
+        }
+    }
+
+    public void overlayPartitions(SampleResult[][] results){
+        for(Geometry.LineSegment partition : partitions){
+            Geometry.Point[] points = partition.getPointsOnSegment();
+            for(Geometry.Point point : points){
+                int xIndex = (int) (point.x / step);
+                int yIndex = (int) (point.y / step);
+                try {
+                    //results[xIndex][yIndex].add("*");
+                    results[xIndex][yIndex] = new SampleResult("*");
+                } catch(ArrayIndexOutOfBoundsException e){
+                    //partition bounds are allowed to be out of index
+                }
+            }
         }
     }
 

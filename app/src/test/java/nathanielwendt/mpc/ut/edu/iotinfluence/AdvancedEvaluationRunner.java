@@ -52,13 +52,17 @@ public class AdvancedEvaluationRunner {
                 devices.add(dev);
             }
 
+            Grid.HOT_WEIGHT = .75;
+            Grid.MED_WEIGHT = .23;
+            Grid.COLD_WEIGHT = .02;
+
             partitions.add(new Geometry.LineSegment(5, 0, 5, 25));
             partitions.add(new Geometry.LineSegment(0, 20, 25, 20));
 
-            zoneManager.add(new Zone(0,5,0,20), Zone.Weight.MED);
-            zoneManager.add(new Zone(0,5,20,24), Zone.Weight.COLD);
-            zoneManager.add(new Zone(6,24,0,20), Zone.Weight.HOT);
-            zoneManager.add(new Zone(6,24,21,24), Zone.Weight.MED);
+            zoneManager.add(new Zone(0,5,0,20), Zone.Weight.MED); //a
+            zoneManager.add(new Zone(0,5,20,24), Zone.Weight.COLD); //b
+            zoneManager.add(new Zone(6,24,0,20), Zone.Weight.HOT); //c
+            zoneManager.add(new Zone(6,24,21,24), Zone.Weight.MED); //d
         }
     }
 
@@ -411,15 +415,30 @@ public class AdvancedEvaluationRunner {
     public void testGenerateProbHeatmap(){
         Grid grid = new StudioGrid(1);
         SampleResult[][] heatmapRes = grid.getZoneHeatmap(false);
-        HeatChart map = new HeatChart(SampleResult.toDoubleArr(heatmapRes));
+        double[] adjWeights = grid.getZoneAdjustedWeights();
+
+
+        for(double adjWeight : adjWeights){
+            System.out.println(adjWeight);
+        }
+
+        grid.overlayPartitions(heatmapRes);
+        grid.overlayDevices(heatmapRes);
+
+        double[][] arr = SampleResult.toDoubleArr(heatmapRes);
+        HeatChart map = new HeatChart(arr);
 
 
         // Step 2: Customise the chart.
-        map.setTitle("Studio");
+        map.setTitle("Simple");
         map.setXAxisLabel("Distance (ft.)");
         map.setYAxisLabel("Distance (ft.)");
         map.setXAxisValuesFrequency(2);
         map.setYAxisValuesFrequency(2);
+        map.setYValuesHorizontal(true);
+        map.setXValuesHorizontal(true);
+        //map.setHighValueColour(Color.GREEN);
+       // map.setLowValueColour(Color.RED);
 
 
         // Step 3: Output the chart to a file.
