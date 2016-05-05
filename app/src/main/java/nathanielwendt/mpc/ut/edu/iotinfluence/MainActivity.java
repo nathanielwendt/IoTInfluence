@@ -12,11 +12,11 @@ import nathanielwendt.mpc.ut.edu.iotinfluence.device.Device;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.DeviceCommand;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.DeviceUnavailableException;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.Light;
-import nathanielwendt.mpc.ut.edu.iotinfluence.device.Observables;
 import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.DeviceReq;
 import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.SpatialReq;
 import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.TypeReq;
 import nathanielwendt.mpc.ut.edu.iotinfluence.misc.Location;
+import nathanielwendt.mpc.ut.edu.iotinfluence.service.DiscoverCallback;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -32,12 +32,20 @@ public class MainActivity extends AppCompatActivity {
         //only can effect static binding if type given here is different from type token (will return nothing)
         reqs.add(new TypeReq(new TypeReq.Type[]{TypeReq.Type.LIGHT}));
 
-        Warble snapshot = new Warble(this);
+        Warble snapshot = new Warble(this, Warble.Discovery.ACTIVE);
 
         //STATIC BIND
         //decoupled
         List<Light> devices = snapshot.retrieve(Light.class, reqs, 1);
         Light light = snapshot.retrieve(Light.class, reqs);
+
+        snapshot.discover(new DiscoverCallback() {
+            @Override
+            public void onDiscover() {
+
+            }
+        });
+
 
         try {
             devices.get(0).on();
@@ -47,8 +55,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         //Use this requestId to report Help! commands
-        String requestId = light.requestId();
-        String deviceId = light.deviceId();
+        snapshot.help(light);
 
         //STATIC BIND
         //coupled
@@ -61,16 +68,33 @@ public class MainActivity extends AppCompatActivity {
         });
 
         //DYNAMIC BIND
-        Observables.SpatialObservable spatialObservable = new Observables.SpatialObservable();
         WarbleBind warbleBinding = new WarbleBind.Builder().reqs(reqs).num(1).ctx(this)
-                .fluidity(WarbleBind.Fluidity.FIXED)
+                .discovery(Warble.Discovery.ONDEMAND)
                 .command(Warble.Plans.lightBinary)
-                .bind(spatialObservable);
+                .build();
 
-        //update
-        Location loc = new Location(0,0);
-        spatialObservable.update(loc);
+        warbleBinding.discover(new DiscoverCallback(){
+            @Override public void onDiscover(){
 
+            }
+        });
+
+        warbleBinding.trigger(reqs);
+
+        List<Device> dynamicDevices = warbleBinding.retrieve();
+        try {
+            Light dLight = (Light) dynamicDevices.get(0);
+            dLight.on();
+
+            //time passes, new binding attached
+
+            dLight.off();
+            warbleBinding.help(dLight);
+
+
+        } catch (DeviceUnavailableException e ){
+            e.printStackTrace();
+        }
 
         //unbind
         warbleBinding.unbind();

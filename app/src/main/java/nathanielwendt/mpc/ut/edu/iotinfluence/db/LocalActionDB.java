@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import nathanielwendt.mpc.ut.edu.iotinfluence.misc.Location;
+import nathanielwendt.mpc.ut.edu.iotinfluence.service.ProxyService;
 
 /**
  * Created by nathanielwendt on 4/5/16.
@@ -50,6 +51,12 @@ public class LocalActionDB {
             //This is no longer an exception because undo actions will call completePending on nonexistent pending records
             return;
         }
+
+        if(ProxyService.isProxyId(deviceId)){
+            //TODO:
+            //lookup actual device id from initiated proxy table
+        }
+
         Action action = Action.newDefault(deviceId, pendingAction.getRefLoc(),
                         pendingAction.getDevLoc(deviceId), true);
         action.type = actionType;

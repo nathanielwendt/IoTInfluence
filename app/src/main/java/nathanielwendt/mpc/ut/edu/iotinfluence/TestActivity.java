@@ -81,7 +81,7 @@ public class TestActivity extends Activity {
     }
 
     public void evalBLEAction(){
-        BLEService bleService = new BLEService("bleh", TypeReq.Type.LIGHT);
+        BLEService bleService = new BLEService("bledevice001", TypeReq.Type.LIGHT);
         BLEService.BLEHandler bleHandler = bleService.new BLEHandler();
 
         //start profiling
@@ -128,8 +128,8 @@ public class TestActivity extends Activity {
 //        HttpRequest auth = new HttpRequest(Params ...);
 //        auth.post(new HttpRequestCallback(){
 //            @Override public void onResult(JSONObject result){
-//                HttpRequest devices = new HttpRequest(Params ...);
-//                String deviceName = findClosest(devices, getCurrLocation());
+//                HttpRequest retrieve = new HttpRequest(Params ...);
+//                String deviceName = findClosest(retrieve, getCurrLocation());
 //                HttpRequest onReq = new HttpRequest(Params ..., deviceName, "device: on");
 //            }
 //        });
@@ -138,11 +138,11 @@ public class TestActivity extends Activity {
 //
 //
 //        //Enterprise
-//        final List<Device> devices = fetchDevices();
+//        final List<Device> retrieve = fetchDevices();
 //        Location userLoc = new Location(0,0);
-//        Device closestDevice = devices.get(0);
+//        Device closestDevice = retrieve.get(0);
 //        double currMin = Double.MAX_VALUE;
-//        for(Device device: devices){
+//        for(Device device: retrieve){
 //            if(Location.distance(device.location(), closestDevice.location()) < currMin){
 //                closestDevice = device;
 //            }
@@ -168,8 +168,8 @@ public class TestActivity extends Activity {
 
         //Abstraction ---------------
         //1) Sign in to wink with RAw HTTP
-        //2) Get a list of devices Raw HTTP
-        //3) Go through list of devices, find closest
+        //2) Get a list of retrieve Raw HTTP
+        //3) Go through list of retrieve, find closest
         //4) Turn device on
 
 

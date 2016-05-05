@@ -103,7 +103,7 @@ public class ServiceManager {
             }
         };
 
-        //TODO: add scan filters to only find appropriate devices
+        //TODO: add scan filters to only find appropriate retrieve
         mBluetoothScanner.startScan(scanCallback);
 
         mHandler.postDelayed(new Runnable() {

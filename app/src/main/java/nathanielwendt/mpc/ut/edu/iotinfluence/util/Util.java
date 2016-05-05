@@ -1,6 +1,7 @@
 package nathanielwendt.mpc.ut.edu.iotinfluence.util;
 
 import java.lang.reflect.Field;
+import java.util.UUID;
 
 /**
  * Created by nathanielwendt on 3/28/16.
@@ -33,5 +34,10 @@ public class Util {
         result.append("}");
 
         return result.toString();
+    }
+
+    public static String getUUID(){
+        UUID uuid = UUID.randomUUID();
+        return uuid.toString();
     }
 }

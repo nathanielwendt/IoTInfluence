@@ -47,7 +47,7 @@ public class LocalDeviceManager implements DeviceManager {
 //                    services.add(service);
 //                    service.fetchDevices(new Service.FetchDevicesCallback(){
 //                        @Override public void onFetch(List<DeviceModel> fetchedDevices){
-//                            devices.addAll(fetchedDevices);
+//                            retrieve.addAll(fetchedDevices);
 //                        }
 //                    });
 //                }

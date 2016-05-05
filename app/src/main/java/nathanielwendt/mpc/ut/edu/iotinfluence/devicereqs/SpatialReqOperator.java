@@ -63,7 +63,7 @@ public class SpatialReqOperator extends AggregateReqOperator {
 
                     //only consider actions for the candidate device
                     //this speeds up the processing and shouldn't affect the outcome too much except
-                    //for complex situations where several devices are near eachother and they can learn from eachother
+                    //for complex situations where several retrieve are near eachother and they can learn from eachother
                     //Note: if you comment this out, must also add the DEV contribution below
                     if(!action.deviceId.equals(candidate.id)){
                         continue;

@@ -9,12 +9,15 @@ import nathanielwendt.mpc.ut.edu.iotinfluence.service.Service;
  * Created by nathanielwendt on 3/25/16.
  */
 public class LightModel extends DeviceModel {
-    public Service service;
     public String name;
     public double brightness;
 
     public Device abs(String requestId){
         return service.light(this.id, requestId);
+    }
+
+    public Device proxy(Service proxyService, String requestId, String proxyId){
+        return proxyService.light(proxyId, requestId);
     }
 
     @Override
