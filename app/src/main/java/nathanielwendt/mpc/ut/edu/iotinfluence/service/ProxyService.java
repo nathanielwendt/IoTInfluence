@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import nathanielwendt.mpc.ut.edu.iotinfluence.db.LocalActionDB;
+import nathanielwendt.mpc.ut.edu.iotinfluence.device.Device;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.DeviceUnavailableException;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.Light;
 import nathanielwendt.mpc.ut.edu.iotinfluence.models.DeviceModel;
@@ -14,12 +16,17 @@ import nathanielwendt.mpc.ut.edu.iotinfluence.models.DeviceModel;
 public class ProxyService implements Service {
     private static final String PROXY_DELIM = "Proxy:";
 
-    private Map<String, DeviceModel> deviceMap = new HashMap<>();
+    private Map<String, DeviceModel> deviceModelMap = new HashMap<>();
+    private Map<String, Device> deviceMap = new HashMap<>();
     private String requestId;
 
     public ProxyService(List<DeviceModel> devices, String requestId){
         this.requestId = requestId;
         setDevices(devices);
+    }
+
+    public String id(){
+        return this.requestId;
     }
 
     public String getKey(String deviceId, String requestId){
@@ -28,8 +35,13 @@ public class ProxyService implements Service {
 
     public void setDevices(List<DeviceModel> devices){
         for(DeviceModel device : devices) {
-            deviceMap.put(getKey(device.id, requestId), device);
+            deviceModelMap.put(getKey(device.id, requestId), device);
         }
+    }
+
+    public Device getActingDevice(Device device){
+        String key = getKey(device.deviceId(), device.requestId());
+        return deviceMap.get(key);
     }
 
     public static boolean isProxyId(String id){
@@ -46,12 +58,17 @@ public class ProxyService implements Service {
 
 
     @Override
-    public Light light(final String deviceId, final String requestId) {
-        return new Light(deviceId, requestId){
+    public Light light(final String deviceId, final String requestId, final LocalActionDB localActionDB) {
+        return new Light(deviceId, requestId, localActionDB){
 
             private Light resolveDevice(){
-                DeviceModel deviceModel = deviceMap.get(getKey(deviceId, requestId));
-                return (Light) deviceModel.abs(requestId);
+                DeviceModel deviceModel = deviceModelMap.get(getKey(deviceId, requestId));
+                Light light = (Light) deviceMap.get(getKey(deviceId, requestId));
+                if(light == null){
+                    light = (Light) deviceModel.abs(requestId, localActionDB);
+                    deviceMap.put(getKey(deviceId, requestId), light);
+                }
+                return light;
             }
 
             @Override

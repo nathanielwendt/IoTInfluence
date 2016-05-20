@@ -12,7 +12,7 @@ public class ServiceLookup {
     private static Map<String, Service> addresses = new HashMap<String, Service>();
 
     static {
-        addresses.put("63:3353:5363:2324", new Wink("10db23b44fb025f1ad302d66693feb11",
+        addresses.put("78:A5:04:8C:1F:10", new WinkMock("10db23b44fb025f1ad302d66693feb11",
                                                     "649bf40892d9caea9ee6f70a0026f434",
                                                     "mobilepervasivecomputing@gmail.com",
                                                     "mpcmpc4IoT"));
@@ -20,6 +20,13 @@ public class ServiceLookup {
     }
 
     public static Service lookup(String address){
-        return addresses.get(address);
+        Service service = addresses.get(address);
+//        if(service == null){
+//            service = new WinkMock("10db23b44fb025f1ad302d66693feb11",
+//                    "649bf40892d9caea9ee6f70a0026f434",
+//                    "mobilepervasivecomputing@gmail.com",
+//                    "mpcmpc4IoT");
+//        }
+        return service;
     }
 }

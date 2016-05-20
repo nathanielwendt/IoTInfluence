@@ -90,7 +90,7 @@ public class EvaluationRunner {
         List<DeviceModel> lights = buildLightsGeneric();
         Grid grid = Grid.newLeftT(lights);
 
-        warble = new Warble(new Activity());
+        warble = new Warble(new Activity(), Warble.Discovery.ONDEMAND);
         warble.setDevManager(new TestDevManager(lights));
         warble.discover();
         while(!warble.hasDiscovered()){}
@@ -178,7 +178,7 @@ public class EvaluationRunner {
         Grid.SampleResult sampleResult = grid.getNearestEffectiveIdCode(sample);
 
         if(!sampleResult.idInResult(warbleLight.deviceId())){
-            warble.help(warbleLight.requestId(), warbleLight.deviceId());
+            warble.help(warbleLight);
             return false;
         }
         return true;

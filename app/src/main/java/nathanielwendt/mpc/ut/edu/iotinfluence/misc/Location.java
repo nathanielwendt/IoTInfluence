@@ -1,9 +1,11 @@
 package nathanielwendt.mpc.ut.edu.iotinfluence.misc;
 
+import nathanielwendt.mpc.ut.edu.iotinfluence.db.DBStorable;
+
 /**
  * Created by nathanielwendt on 4/5/16.
  */
-public class Location {
+public class Location implements DBStorable {
     private final double x;
     private final double y;
 
@@ -33,5 +35,17 @@ public class Location {
 
     @Override public String toString(){
         return this.x() + "," + this.y();
+    }
+
+    @Override
+    public String toSchema() {
+        return this.toString();
+    }
+
+    public static Location fromSchema(String schema) {
+        String[] portions = schema.split(",");
+        double x = Double.valueOf(portions[0]);
+        double y = Double.valueOf(portions[1]);
+        return new Location(x,y);
     }
 }

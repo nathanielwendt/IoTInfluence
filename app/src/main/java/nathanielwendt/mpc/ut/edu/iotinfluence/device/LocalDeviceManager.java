@@ -15,6 +15,8 @@ import nathanielwendt.mpc.ut.edu.iotinfluence.util.InitializedCallback;
  */
 public class LocalDeviceManager implements DeviceManager {
     List<DeviceModel> devices = new ArrayList<>();
+    //maintains a list of UUIDs existing within the device manager to not add duplicates
+    List<String> deviceUUIDs = new ArrayList<>();
     List<Service> services = new ArrayList<>();
     Context ctx;
     ServiceManager serviceManager;
@@ -67,6 +69,17 @@ public class LocalDeviceManager implements DeviceManager {
         throw new RuntimeException("not implemented yet");
     }
 
+    private void addDevices(List<DeviceModel> newDevices){
+        for(DeviceModel newDevice : newDevices){
+            //BLE Services will have a uuid that is a repeated deviceId (this should be OK)
+            String uuid = newDevice.service.id() + newDevice.id;
+            if(!deviceUUIDs.contains(uuid)){
+                devices.add(newDevice);
+                deviceUUIDs.add(uuid);
+            }
+        }
+    }
+
     @Override
     public void scan(final InitializedCallback callback){
         //ToDo: perform cloud update scans as well
@@ -76,7 +89,7 @@ public class LocalDeviceManager implements DeviceManager {
                 services.add(service);
                 service.fetchDevices(new Service.FetchDevicesCallback(){
                     @Override public void onFetch(List<DeviceModel> fetchedDevices){
-                        devices.addAll(fetchedDevices);
+                        addDevices(fetchedDevices);
                     }
                 });
             }
@@ -86,6 +99,16 @@ public class LocalDeviceManager implements DeviceManager {
                 callback.onInit();
             }
         });
+
+        //Update existing services
+        for(Service service: services){
+            service.fetchDevices(new Service.FetchDevicesCallback() {
+                @Override
+                public void onFetch(List<DeviceModel> fetchedDevices) {
+                    addDevices(fetchedDevices);
+                }
+            });
+        }
     }
 
     @Override

@@ -1,5 +1,6 @@
 package nathanielwendt.mpc.ut.edu.iotinfluence.models;
 
+import nathanielwendt.mpc.ut.edu.iotinfluence.db.LocalActionDB;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.Device;
 import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.TypeReq;
 import nathanielwendt.mpc.ut.edu.iotinfluence.misc.Location;
@@ -21,8 +22,8 @@ public abstract class DeviceModel {
     public boolean powered;
     public Location location;
 
-    public abstract Device abs(String requestId);
-    public abstract Device proxy(Service proxyService, String requestId, String proxyId);
+    public abstract Device abs(String requestId, LocalActionDB localActionDB);
+    public abstract Device proxy(Service proxyService, String requestId, String proxyId, LocalActionDB localActionDB);
     public abstract Class<? extends Device> type();
     public Location location(){
         return location;

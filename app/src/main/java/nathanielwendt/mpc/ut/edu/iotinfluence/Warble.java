@@ -9,6 +9,7 @@ import java.util.Observable;
 import java.util.Observer;
 
 import nathanielwendt.mpc.ut.edu.iotinfluence.db.Action;
+import nathanielwendt.mpc.ut.edu.iotinfluence.db.InteractionHistory;
 import nathanielwendt.mpc.ut.edu.iotinfluence.db.LocalActionDB;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.Device;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.DeviceCommand;
@@ -39,6 +40,8 @@ public class Warble {
     Context ctx;
     Observable initObserver;
     Discovery discovery;
+    InteractionHistory history;
+    LocalActionDB localActionDB;
 
     public enum Discovery {
         ONDEMAND(0), ACTIVE(10000), HYPER(1000);
@@ -55,6 +58,8 @@ public class Warble {
         //populate services and retrieve tables
         this.ctx = ctx;
         this.discovery = discovery;
+        history = new InteractionHistory(ctx);
+        localActionDB = new LocalActionDB(ctx);
 
         //TODO: handle automatic discovery
 
@@ -67,9 +72,11 @@ public class Warble {
         };
     }
 
+    //Public methods to help with testability of Warble (evaluation/simulation)
     public void setDevManager(DeviceManager devManager){
         this.devManager = devManager;
     }
+    public void setInteractionHistory(InteractionHistory history){ this.history = history; }
 
     public void discover(){
         if(devManager == null){
@@ -117,8 +124,10 @@ public class Warble {
 
     public <D extends Device> List<D> retrieve(Class<D> clazz, List<DeviceReq> reqs, int N){
         if (!hasDiscovered()) {
-            throw new IllegalStateException("Warble is not hasDiscovered");
+            throw new IllegalStateException("Warble has not completed Discovery");
         }
+        localActionDB.flushToHistory();
+
         List<Device> finalDevices = this.retrieve(reqs, N);
 
         //transform to actual device rather than model version
@@ -135,8 +144,10 @@ public class Warble {
 
     public List<Device> retrieve(List<DeviceReq> reqs, int N){
         if (!hasDiscovered()) {
-            throw new IllegalStateException("Warble is not hasDiscovered");
+            throw new IllegalStateException("Warble has not completed Discovery");
         }
+        localActionDB.flushToHistory();
+
         String requestId = Util.getUUID();
         return retrieveHelper(null, reqs, N, requestId);
     }
@@ -150,8 +161,9 @@ public class Warble {
         }
     }
 
-    public <D extends Device> void act(final Class<D> clazz, final List<DeviceReq> reqs, final int N,
-                        final DeviceCommand command){
+    //TODO: return handles to devices that cannot act but exist
+    public <D extends Device> void batch(final Class<D> clazz, final List<DeviceReq> reqs, final int N,
+                                         final DeviceCommand command){
         this.whenDiscovered(new DiscoverCallback() {
             @Override
             public void onDiscover() {
@@ -168,11 +180,25 @@ public class Warble {
         });
     }
 
+    public <D extends Device> DynamicBinding dynamicBind(final Class<D> clazz, final List<DeviceReq> reqs,
+                                                         final int N, final DevicePlan plan){
+        return new DynamicBinding.Builder()
+                .reqs(reqs)
+                .num(1)
+                .plan(plan)
+                .warble(this)
+                .build();
+    }
+
+    public DynamicBinding dynamicBind(final List<DeviceReq> reqs, final int N, final DevicePlan plan){
+        return dynamicBind(null, reqs, N, plan);
+    }
+
     private <D extends Device> List<Device> retrieveHelper(Class<D> clazz, List<DeviceReq> reqs, int N, String requestId) {
         List<DeviceModel> finalDevices = retrieveCore(clazz, reqs, N, requestId);
         List<Device> ret = new ArrayList<>();
         for (DeviceModel device : finalDevices) {
-            Device temp = device.abs(requestId);
+            Device temp = device.abs(requestId, localActionDB);
             ret.add(temp);
         }
         return ret;
@@ -205,7 +231,7 @@ public class Warble {
         while (devIter.hasNext()) {
             DeviceModel device = devIter.next();
             for (ItemwiseReqOperator operator : itemwiseOperators) {
-                if (!operator.match(device)) {
+                if (!operator.match(device, history)) {
                     devIter.remove();
                     break;
                 }
@@ -214,7 +240,7 @@ public class Warble {
 
         //apply aggregate reqs to device collection
         for (AggregateReqOperator operator : aggregateOperators) {
-            devices = operator.resolve(devices);
+            devices = operator.resolve(devices, history);
         }
 
         List<DeviceModel> finalDevices;
@@ -232,12 +258,12 @@ public class Warble {
         }
 
         //List<Device> ret = new ArrayList<>();
-        LocalActionDB.insertPending(requestId, refLoc);
+        localActionDB.insertPending(requestId, refLoc);
         for (DeviceModel device : finalDevices) {
             //populate local histories
             //Device temp = device.abs(requestId);
             //ret.add(temp);
-            LocalActionDB.populatePending(requestId, device.id, device.location());
+            localActionDB.populatePending(requestId, device.id, device.location());
         }
         return finalDevices;
     }
@@ -245,17 +271,16 @@ public class Warble {
     //TODO: trigger a device scan on a help request
     //@Convenience method for calling help on an object
     public void help(Device device){
-        String requestId = device.requestId();
-        String deviceId = device.deviceId();
-        this.help(requestId, deviceId);
+        String actionId = device.getLastActionId();
+        this.help(actionId);
     }
 
-    public void help(String requestId, String deviceId){
+    public void help(String actionId){
         //update previous entry, indicating it failed
-        LocalActionDB.update(requestId, deviceId, false);
+        localActionDB.update(actionId, false);
 
         //rollback action
-        Action badAction = LocalActionDB.getAction(requestId, deviceId);
+        Action badAction = localActionDB.getAction(actionId);
         try {
             badAction.type.undo();
         } catch (DeviceUnavailableException e) {
@@ -270,20 +295,6 @@ public class Warble {
             @Override
             public void onBind(Device device) throws DeviceUnavailableException {
                 ((Light) device).on();
-            }
-        };
-    }
-
-    public static class Plans {
-        public static DevicePlan lightBinary = new DevicePlan() {
-            @Override
-            public void onBind(Device device) throws DeviceUnavailableException {
-                ((Light) device).on();
-            }
-
-            @Override
-            public void onUnbind(Device device) throws DeviceUnavailableException {
-                ((Light) device).off();
             }
         };
     }

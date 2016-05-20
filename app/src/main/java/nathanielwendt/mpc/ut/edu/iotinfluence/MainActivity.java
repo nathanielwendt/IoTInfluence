@@ -28,16 +28,14 @@ public class MainActivity extends AppCompatActivity {
         List<DeviceReq> reqs = new ArrayList<DeviceReq>();
         Location currLoc = new Location(0,0);
         reqs.add(new SpatialReq(SpatialReq.Bound.CLOSEST, SpatialReq.Influence.AWARE, currLoc));
-        //no effect for static binding since type token is passed into methods
-        //only can effect static binding if type given here is different from type token (will return nothing)
         reqs.add(new TypeReq(new TypeReq.Type[]{TypeReq.Type.LIGHT}));
 
         Warble snapshot = new Warble(this, Warble.Discovery.ACTIVE);
-
-        //STATIC BIND
-        //decoupled
         List<Light> devices = snapshot.retrieve(Light.class, reqs, 1);
         Light light = snapshot.retrieve(Light.class, reqs);
+
+        snapshot.discover();
+        snapshot.hasDiscovered();
 
         snapshot.discover(new DiscoverCallback() {
             @Override
@@ -45,7 +43,6 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-
 
         try {
             devices.get(0).on();
@@ -59,45 +56,57 @@ public class MainActivity extends AppCompatActivity {
 
         //STATIC BIND
         //coupled
-        snapshot.act(Light.class, reqs, 1, Warble.Commands.lightBinary);
-        snapshot.act(Light.class, reqs, 1, new DeviceCommand() {
+        snapshot.batch(Light.class, reqs, 1, Warble.Commands.lightBinary);
+        snapshot.batch(Light.class, reqs, 1, new DeviceCommand() {
             @Override
             public void onBind(Device device) throws DeviceUnavailableException {
                 ((Light) device).on();
             }
         });
 
-        //DYNAMIC BIND
-        WarbleBind warbleBinding = new WarbleBind.Builder().reqs(reqs).num(1).ctx(this)
-                .discovery(Warble.Discovery.ONDEMAND)
-                .command(Warble.Plans.lightBinary)
-                .build();
-
-        warbleBinding.discover(new DiscoverCallback(){
-            @Override public void onDiscover(){
+        DynamicBinding dBinding = snapshot.dynamicBind(reqs, 1, DynamicBinding.Plans.lightBinary);
+        dBinding.trigger(reqs);
+        //discovery is still on the snapshot
+        snapshot.discover(new DiscoverCallback() {
+            @Override
+            public void onDiscover() {
 
             }
         });
 
-        warbleBinding.trigger(reqs);
-
-        List<Device> dynamicDevices = warbleBinding.retrieve();
+        List<Device> dDevices = dBinding.retrieve();
         try {
-            Light dLight = (Light) dynamicDevices.get(0);
+            Light dLight = (Light) dDevices.get(0);
             dLight.on();
 
             //time passes, new binding attached
 
             dLight.off();
-            warbleBinding.help(dLight);
+            dBinding.help(dLight);
 
 
         } catch (DeviceUnavailableException e ){
             e.printStackTrace();
         }
 
-        //unbind
-        warbleBinding.unbind();
+        dBinding.unbind();
+
+
+//        //DYNAMIC BIND
+//        DynamicBinding warbleBinding = new DynamicBinding.Builder().reqs(reqs).num(1).ctx(this)
+//                .discovery(Warble.Discovery.ONDEMAND)
+//                .plan(Warble.Plans.lightBinary)
+//                .build();
+//
+//        warbleBinding.discover(new DiscoverCallback(){
+//            @Override public void onDiscover(){
+//
+//            }
+//        });
+//
+//        warbleBinding.trigger(reqs);
+
+
 
     }
 

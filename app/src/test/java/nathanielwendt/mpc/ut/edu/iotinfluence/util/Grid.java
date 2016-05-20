@@ -293,7 +293,7 @@ public abstract class Grid {
         return res;
     }
 
-    public void mockTrainAllLocs(){
+    public void mockTrainAllLocs(LocalActionDB localDb){
         Location[] locations = getAllLocs();
         int count = 0;
         for(Location location: locations){
@@ -310,7 +310,7 @@ public abstract class Grid {
             Action action = Action.newDefault(deviceId, location,
                     devLocation, true);
             action.type = Light.LightAction.ON;
-            LocalActionDB.insert(String.valueOf(count++), deviceId, action);
+            localDb.insert(String.valueOf(count++), action);
         }
     }
 
@@ -350,7 +350,8 @@ public abstract class Grid {
             int x = (int) (dev.location().x() / step);
             int y = (int) (dev.location().y() / step);
             System.out.println(x + " , " + y);
-            results[x][y] = new SampleResult("[" + dev.id + "]");
+            //results[x][y] = new SampleResult("[" + dev.id + "]");
+            results[x][y] = new SampleResult("1");
         }
     }
 

@@ -108,5 +108,6 @@
     <orderEntry type="library" exported="" name="httpclient-4.3.6" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="jheatchart-0.6" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="objenesis-1.0" level="project" />
+    <orderEntry type="module" module-name="etch" exported="" />
   </component>
 </module>

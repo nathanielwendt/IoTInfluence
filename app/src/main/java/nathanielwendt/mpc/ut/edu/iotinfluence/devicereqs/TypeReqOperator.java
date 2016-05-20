@@ -1,5 +1,6 @@
 package nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs;
 
+import nathanielwendt.mpc.ut.edu.iotinfluence.db.InteractionHistory;
 import nathanielwendt.mpc.ut.edu.iotinfluence.models.DeviceModel;
 
 /**
@@ -13,7 +14,7 @@ public class TypeReqOperator extends ItemwiseReqOperator {
     }
 
     @Override
-    public boolean match(DeviceModel device) {
+    public boolean match(DeviceModel device, InteractionHistory history) {
         for(TypeReq.Type type: req.types){
             if(type == device.type) return true;
         }

@@ -30,6 +30,7 @@ public class ServiceManager {
     private static final int SCAN_PERIOD = 5000;
     private ScanCallback scanCallback;
 
+    //maintains a list of serviceIds to only add new services when discovering
     final List<String> serviceIds = new ArrayList<>();
 
     public ServiceManager(Context ctx) {
@@ -66,7 +67,7 @@ public class ServiceManager {
             @Override
             public void onScanResult(int callbackType, ScanResult result) {
                 super.onScanResult(callbackType, result);
-                //System.out.println(result.toString());
+                System.out.println(result.toString());
 
                 //check address from beacon first
                 String serviceId = result.getDevice().getAddress();
@@ -84,7 +85,7 @@ public class ServiceManager {
 
                 if(service != null){
                     if(!serviceIds.contains(serviceId)){
-                        Log.d("SERVICE", "found service: " + serviceId);
+                        Log.d("SERVICE", "found new service: " + serviceId);
                         serviceIds.add(serviceId);
                         findCallback.onService(service);
                     }

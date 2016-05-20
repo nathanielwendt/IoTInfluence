@@ -22,6 +22,7 @@ import nathanielwendt.mpc.ut.edu.iotinfluence.models.LightModel;
 public class SpatialReqOperatorTest {
     List<DeviceModel> candidates;
     LightModel[] lightModels;
+    LocalActionDB localActionDB = new LocalActionDB(null);
 
     public void buildBasicGrid(){
         candidates = new ArrayList<DeviceModel>();
@@ -56,7 +57,7 @@ public class SpatialReqOperatorTest {
         String requestId = "req" + String.valueOf(count++);
 
         String deviceId = lightModels[lmIndex].id;
-        LocalActionDB.insert(requestId, deviceId, Action.newDefault(deviceId, loc,
+        localActionDB.insert(requestId, Action.newDefault(deviceId, loc,
                 lightModels[lmIndex].location, successful));
     }
 
@@ -82,12 +83,13 @@ public class SpatialReqOperatorTest {
         executeSingleLocation(new Location(0,7.5), new String[]{"1"});
     }
 
+    //Need to pass interaction history (global) to resolve method, just passed null to bypass compilation errors
     private void executeSingleLocation(Location loc, String[] expected){
         SpatialReq spatialReq = new SpatialReq(SpatialReq.Bound.CLOSEST,
                 SpatialReq.Influence.AWARE, loc);
         SpatialReqOperator spatialReqOp = new SpatialReqOperator(spatialReq);
 
-        checkSequence(spatialReqOp.resolve(candidates), expected);
+        checkSequence(spatialReqOp.resolve(candidates, null), expected);
     }
 
     private void checkSequence(List<DeviceModel> res, String[] desiredIdList){

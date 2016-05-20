@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import nathanielwendt.mpc.ut.edu.iotinfluence.db.Action;
-import nathanielwendt.mpc.ut.edu.iotinfluence.db.LocalActionDB;
+import nathanielwendt.mpc.ut.edu.iotinfluence.db.InteractionHistory;
 import nathanielwendt.mpc.ut.edu.iotinfluence.misc.Location;
 import nathanielwendt.mpc.ut.edu.iotinfluence.models.DeviceModel;
 
@@ -13,8 +13,8 @@ import nathanielwendt.mpc.ut.edu.iotinfluence.models.DeviceModel;
  * Created by nathanielwendt on 3/23/16.
  */
 public class SpatialReqOperator extends AggregateReqOperator {
-    public static double DistToHistoryRatio = 100; //9.5
-    public static double DISTANCE_WEIGHT = 1000;
+    public static double DistToHistoryRatio = 100; //100
+    public static double DISTANCE_WEIGHT = 1000; //1000
 
     private final static double SAMPLE_TOLERANCE = 0.01;
 
@@ -33,13 +33,21 @@ public class SpatialReqOperator extends AggregateReqOperator {
     @Override
     //Do we want to trim candidates that have no (0.0) knowledge?
     //e.g. Influence.Unaware with a device that doesn't have a known location?
-    public List<DeviceModel> resolve(List<DeviceModel> candidates) {
+    public List<DeviceModel> resolve(List<DeviceModel> candidates, InteractionHistory history) {
         List<Action> actions;
         List<RelevancePoint> relPoints = new ArrayList<RelevancePoint>();
         double knowledge;
 
-        if(LocalActionDB.size() > 10){
-            DistToHistoryRatio = DISTANCE_WEIGHT / (LocalActionDB.size());
+        //TODO: play with this scaling
+        //TODO: play with the distance function (which was sqrt scaling function)
+
+        int dbSize = history.size();
+        if(dbSize > 10){
+            if((dbSize * 10) <= DISTANCE_WEIGHT){
+                DistToHistoryRatio = DISTANCE_WEIGHT / (dbSize);
+            } else {
+                DistToHistoryRatio = 10;
+            }
         }
 
         for(DeviceModel candidate : candidates) {
@@ -49,15 +57,16 @@ public class SpatialReqOperator extends AggregateReqOperator {
             double posKnowledge = 0.0;
             double negKnowledge = 0.0;
             if (this.req.influence == SpatialReq.Influence.AWARE) {
-                if (candidate.location() != null) {
-                    if(this.req.requesterLoc == null){ throw new RuntimeException("Requester Loc is Null and is required"); }
-                    actions = LocalActionDB.query(this.req.requesterLoc,
-                                                    candidate.location(),
-                                                    INFLUENCE);
-                } else {
-                    actions = LocalActionDB.query(this.req.requesterLoc,
-                                                    INFLUENCE);
+                if(true){
+                    throw new RuntimeException("why is this herelfjekflje?");
                 }
+
+                if (candidate.location() != null && this.req.requesterLoc == null) {
+                    throw new RuntimeException("Requester Loc is Null and is required");
+                }
+
+                //only query by requester loc because we don't use device locations
+                actions = history.query(this.req.requesterLoc, INFLUENCE);
 
                 for (Action action : actions) {
 
@@ -69,8 +78,8 @@ public class SpatialReqOperator extends AggregateReqOperator {
                         continue;
                     }
                     if (action.devLocation != null) {
-                        double refDist = Location.distance(action.refLocation, this.req.requesterLoc, .25);
-                        double devDist = Location.distance(action.devLocation, candidate.location(), .25);
+                        double refDist = Location.distance(action.refLocation, this.req.requesterLoc);
+                        double devDist = Location.distance(action.devLocation, candidate.location());
 
                         if(action.successful){
                             //if reference point matches a previous successful query, make this device
@@ -85,16 +94,16 @@ public class SpatialReqOperator extends AggregateReqOperator {
                             //double adjRefValue = refValue * REF_WEIGHT; //0 - 50
                             //double adjDevValue = refValue * DEV_WEIGHT; //0 - 10
                             posKnowledge += ((REF_WEIGHT * (REF_THRESH - refDist)));
-                                    //(DEV_WEIGHT * (DEV_THRESH - devDist)));  //0 - 500
+                                    //(DEV_WEIGHT * (DEV_THRESH - devDist));  //0 - 500
                             posCount++;
                         } else {
                             negKnowledge += ((REF_WEIGHT * (REF_THRESH - refDist)));
-                                    //(DEV_WEIGHT * (DEV_THRESH - devDist)));
+                                    //(DEV_WEIGHT * (DEV_THRESH - devDist));
                             negCount++;
                         }
 
                     } else {
-                        double refDist = Location.distance(action.refLocation, this.req.requesterLoc, .25);
+                        double refDist = Location.distance(action.refLocation, this.req.requesterLoc);
                         if(action.successful){
                             posKnowledge += ((REF_WEIGHT * (REF_THRESH - refDist)));
                             posCount++;
@@ -102,20 +111,22 @@ public class SpatialReqOperator extends AggregateReqOperator {
                             negKnowledge += ((REF_WEIGHT * (REF_THRESH - refDist)));
                             negCount++;
                         }
-//                        double refDist = Location.distance(action.refLocation, this.req.requesterLoc);
-//                        double sign = (action.successful) ? 1 : -1;
-//                        knowledge += sign * ((REF_WEIGHT * (REF_THRESH - refDist)));
                     }
                 }
 
-                //knowledge = posKnowledge - negKnowledge;
-                if (posCount != 0) {
-                    knowledge += posKnowledge / ((double) posCount);
+                if(posCount != 0 || negCount!= 0){
+                    knowledge += (posKnowledge - negKnowledge) / ((double) posCount + (double) + negCount);
                 }
 
-                if (negCount != 0) {
-                    knowledge -=  negKnowledge / ((double) negCount) ;
-                }
+
+                //knowledge = posKnowledge - negKnowledge;
+//                if (posCount != 0) {
+//                    knowledge += posKnowledge / ((double) posCount);
+//                }
+//
+//                if (negCount != 0) {
+//                    knowledge -=  negKnowledge / ((double) negCount) ;
+//                }
             }
 
             if (candidate.location() != null) {

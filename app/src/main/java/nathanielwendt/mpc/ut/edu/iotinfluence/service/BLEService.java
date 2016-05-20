@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import nathanielwendt.mpc.ut.edu.iotinfluence.db.LocalActionDB;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.DeviceUnavailableException;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.Light;
 import nathanielwendt.mpc.ut.edu.iotinfluence.devicereqs.TypeReq;
@@ -31,6 +32,10 @@ public class BLEService implements Service {
     public BLEService(String deviceId, TypeReq.Type type){
         this.type = type;
         this.deviceId = deviceId;
+    }
+
+    public String id(){
+        return this.deviceId;
     }
 
     public class BLEHandler {
@@ -108,8 +113,8 @@ public class BLEService implements Service {
     }
 
     @Override
-    public Light light(String deviceId, String requestId) {
-        return new Light(deviceId, requestId) {
+    public Light light(String deviceId, String requestId, LocalActionDB localActionDB) {
+        return new Light(deviceId, requestId, localActionDB) {
             BLEHandler bleHandler = new BLEHandler();
 
             @Override

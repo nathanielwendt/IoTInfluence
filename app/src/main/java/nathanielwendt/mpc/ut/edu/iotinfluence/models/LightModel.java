@@ -1,6 +1,7 @@
 package nathanielwendt.mpc.ut.edu.iotinfluence.models;
 
 
+import nathanielwendt.mpc.ut.edu.iotinfluence.db.LocalActionDB;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.Device;
 import nathanielwendt.mpc.ut.edu.iotinfluence.device.Light;
 import nathanielwendt.mpc.ut.edu.iotinfluence.service.Service;
@@ -12,12 +13,12 @@ public class LightModel extends DeviceModel {
     public String name;
     public double brightness;
 
-    public Device abs(String requestId){
-        return service.light(this.id, requestId);
+    public Device abs(String requestId, LocalActionDB localActionDB){
+        return service.light(this.id, requestId, localActionDB);
     }
 
-    public Device proxy(Service proxyService, String requestId, String proxyId){
-        return proxyService.light(proxyId, requestId);
+    public Device proxy(Service proxyService, String requestId, String proxyId, LocalActionDB localActionDB){
+        return proxyService.light(proxyId, requestId, localActionDB);
     }
 
     @Override

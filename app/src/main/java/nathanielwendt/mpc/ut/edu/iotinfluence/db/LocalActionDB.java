@@ -1,8 +1,8 @@
 package nathanielwendt.mpc.ut.edu.iotinfluence.db;
 
-import java.util.ArrayList;
+import android.content.Context;
+
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import nathanielwendt.mpc.ut.edu.iotinfluence.misc.Location;
@@ -12,30 +12,34 @@ import nathanielwendt.mpc.ut.edu.iotinfluence.service.ProxyService;
  * Created by nathanielwendt on 4/5/16.
  */
 public class LocalActionDB {
-    //key is index of (RequestId + DeviceId)
-    private static Map<String, Action> actions = new HashMap<>();
+    private InteractionHistory history;
+
+    public LocalActionDB(Context ctx){
+        if(ctx != null){
+            history = new InteractionHistory(ctx);
+        }
+    }
+
+    //key is actionId
+    private Map<String, Action> actions = new HashMap<>();
 
     //key is index of (RequestId)
-    private static Map<String, PendingAction> pending = new HashMap<>();
+    private Map<String, PendingAction> pending = new HashMap<>();
 
-    public static void insert(String requestId, String deviceId, Action action){
-        actions.put(requestId + deviceId, action);
+    public void insert(String actionId, Action action){
+        actions.put(actionId, action);
     }
 
-    public static Action getAction(String requestId, String deviceId){
-        return actions.get(requestId + deviceId);
+    public Action getAction(String actionId){
+        return actions.get(actionId);
     }
 
-    public static int size(){
-        return actions.size();
-    }
-
-    public static void insertPending(String requestId, Location refLoc){
+    public void insertPending(String requestId, Location refLoc){
         PendingAction pendingAction = new PendingAction(requestId, refLoc);
         pending.put(requestId, pendingAction);
     }
 
-    public static void populatePending(String requestId, String deviceId, Location deviceLoc){
+    public void populatePending(String requestId, String deviceId, Location deviceLoc){
         PendingAction pendingAction = pending.get(requestId);
         if(pendingAction == null){
             throw new RuntimeException("cannot populate empty pending request");
@@ -43,8 +47,8 @@ public class LocalActionDB {
         pendingAction.addDevice(deviceId, deviceLoc);
     }
 
-    //always marked as successful, a help! command will overwrite the entry to be unsuccessful
-    public static void completePending(String requestId, String deviceId, ActionType actionType){
+    //always marked as successful, a help! plan will overwrite the entry to be unsuccessful
+    public void completePending(String requestId, String deviceId, String actionId, ActionType actionType){
         PendingAction pendingAction = pending.get(requestId);
         if(pendingAction == null){
             //TODO: log that client is trying to populate empty pending request
@@ -60,42 +64,55 @@ public class LocalActionDB {
         Action action = Action.newDefault(deviceId, pendingAction.getRefLoc(),
                         pendingAction.getDevLoc(deviceId), true);
         action.type = actionType;
-        LocalActionDB.insert(requestId, deviceId, action);
-        pending.remove(requestId);
+        action.id = actionId;
+        this.insert(actionId, action);
+        //no longer remove because pending is just a template from which many actions may be copied
+        //pending.remove(requestId);
     }
 
-    public static void update(String requestId, String deviceId, boolean successful){
-        Action action = actions.get(requestId + deviceId);
+    public void update(String actionId, boolean successful){
+        Action action = actions.get(actionId);
         action.successful = successful;
     }
 
-    public static List<Action> query(Location r, Location d, double range){
-        List<Action> res = new ArrayList<>();
-        for(Action action : actions.values()){
-            double distToDev = Location.distance(action.devLocation, d);
-            double distToRef = Location.distance(action.refLocation, r);
-            if(distToDev <= range && distToRef <= range){
-                res.add(action);
-            }
-        }
-        return res;
-    }
-
-    public static void clear(){
+    public void clear(){
         actions.clear();
         pending.clear();
     }
 
-    public static List<Action> query(Location r, double range){
-        List<Action> res = new ArrayList<>();
+    public void flushToHistory(){
         for(Action action : actions.values()){
-            double distToRef = Location.distance(action.refLocation, r);
-            if(distToRef <= range){
-                res.add(action);
-            }
+            history.insert(action);
         }
-        return res;
     }
+
+//    public int size(){
+//        return actions.size();
+//    }
+
+//    public List<Action> query(Location r, Location d, double range){
+//        List<Action> res = new ArrayList<>();
+//        for(Action action : actions.values()){
+//            double distToDev = Location.distance(action.devLocation, d);
+//            double distToRef = Location.distance(action.refLocation, r);
+//            if(distToDev <= range && distToRef <= range){
+//                res.add(action);
+//            }
+//        }
+//        return res;
+//    }
+//
+//
+//    public List<Action> query(Location r, double range){
+//        List<Action> res = new ArrayList<>();
+//        for(Action action : actions.values()){
+//            double distToRef = Location.distance(action.refLocation, r);
+//            if(distToRef <= range){
+//                res.add(action);
+//            }
+//        }
+//        return res;
+//    }
 
     private static class PendingAction {
         private Map<String, Location> devLocs = new HashMap<>();

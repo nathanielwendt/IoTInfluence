@@ -24,7 +24,7 @@ import nathanielwendt.mpc.ut.edu.iotinfluence.models.LightModel;
 /**
  * Created by nathanielwendt on 3/8/16.
  */
-public class Wink implements Service {
+public class WinkMock implements Service {
     private final String clientId;
     private final String clientSecret;
     private final String userName;
@@ -38,26 +38,26 @@ public class Wink implements Service {
             super(async);
         }
 
-        @Override
-        public void get(String url, AsyncHttpResponseHandler responseHandler) {
-            this.header("Authorization", "Bearer " + accessToken);
-            super.get(url, responseHandler);
-        }
-
-        @Override
-        public void post(String url, AsyncHttpResponseHandler responseHandler) {
-            this.header("Authorization", "Bearer " + accessToken);
-            super.post(url, responseHandler);
-        }
-
-        @Override
-        public void put(String url, AsyncHttpResponseHandler responseHandler) {
-            this.header("Authorization", "Bearer " + accessToken);
-            super.put(url, responseHandler);
-        }
+//        @Override
+//        public void get(String url, AsyncHttpResponseHandler responseHandler) {
+//            //this.header("Authorization", "Bearer " + accessToken);
+//            super.get(url, responseHandler);
+//        }
+//
+//        @Override
+//        public void post(String url, AsyncHttpResponseHandler responseHandler) {
+//            //this.header("Authorization", "Bearer " + accessToken);
+//            super.post(url, responseHandler);
+//        }
+//
+//        @Override
+//        public void put(String url, AsyncHttpResponseHandler responseHandler) {
+//            //this.header("Authorization", "Bearer " + accessToken);
+//            super.put(url, responseHandler);
+//        }
 
         @Override public String getBaseUrl(){
-            return "https://api.wink.com";
+            return "http://pacobackend.appspot.com/";
         }
     }
 
@@ -77,19 +77,19 @@ public class Wink implements Service {
         req.param("password", passPhrase);
         req.param("grant_type", "password");
 
-        req.post("/oauth2/token", new JsonHttpResponseHandler() {
+        accessToken = "dummyval";
+        System.out.println("Logging in to WinkMock Server");
+
+        req.get("?n=1", new JsonHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                try {
-                    System.out.println(statusCode);
-                    JSONObject data = (JSONObject) response.get("data");
-                    accessToken = (String) data.get("access_token");
-                    refreshToken = (String) data.get("refresh_token");
-                    System.out.println(accessToken);
-                    callback.signedIn();
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+
+//                    System.out.println(statusCode);
+//                    JSONObject data = (JSONObject) response.get("data");
+//                    accessToken = (String) data.get("access_token");
+//                    refreshToken = (String) data.get("refresh_token");
+//                    System.out.println(accessToken);
+                callback.signedIn();
             }
         });
     }
@@ -98,7 +98,7 @@ public class Wink implements Service {
         return accessToken != null;
     }
 
-    public Wink(String clientId, String clientSecret, String userName, String passPhrase){
+    public WinkMock(String clientId, String clientSecret, String userName, String passPhrase){
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.userName = userName;
@@ -133,7 +133,7 @@ public class Wink implements Service {
                             //JSONObject desiredState = (JSONObject) deviceData.get("desired_state");
                             //light.powered = (Boolean) desiredState.get("powered");
                             //light.brightness = (Double) desiredState.get("brightness");
-                            light.service = Wink.this;
+                            light.service = WinkMock.this;
                             //System.out.println(light);
                             devices.add(light);
                         }
@@ -149,7 +149,7 @@ public class Wink implements Service {
 
     public void fetchDevices(final FetchDevicesCallback callback) {
         if (!signedIn()) {
-            signIn(new Wink.SignInCallback() {
+            signIn(new WinkMock.SignInCallback() {
                 @Override
                 public void signedIn() {
                     fetchDevicesHelper(callback);
@@ -214,12 +214,7 @@ public class Wink implements Service {
             public void on() throws DeviceUnavailableException {
                 super.on();
                 WinkRequest req = new WinkRequest(true);
-                req.param("light_bulb_id", deviceId);
-                Map<String,Object> desiredState = new HashMap<String,Object>();
-                desiredState.put("powered", true);
-                req.param("desired_state", desiredState);
-                req.param("powered", false);
-                req.put("/light_bulbs/" + deviceId, lightHandler);
+                req.get("?n=1", lightHandler);
             }
         };
     }
